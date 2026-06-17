@@ -44,9 +44,6 @@
     zoomFit:       document.getElementById("zoom-fit"),
     zoomPct:       document.getElementById("zoom-pct"),
     exportBtn:     document.getElementById("export-btn"),
-    exportMenu:    document.getElementById("export-menu"),
-    exportPng2x:   document.getElementById("export-png-2x"),
-    exportSvg:     document.getElementById("export-svg"),
   };
 
   let currentData = clone(EXAMPLE);
@@ -231,15 +228,7 @@
   function hideError() { els.errorBox.style.display = "none"; }
 
   // ═══════════════════════════ EXPORT ═══════════════════════════
-  els.exportBtn.addEventListener("click", e => {
-    e.stopPropagation();
-    els.exportMenu.classList.toggle("open");
-  });
-  document.addEventListener("click", () => els.exportMenu.classList.remove("open"));
-  els.exportMenu.addEventListener("click", e => e.stopPropagation());
-
-  els.exportPng2x.addEventListener("click", () => { exportPNG(2); els.exportMenu.classList.remove("open"); });
-  els.exportSvg.addEventListener("click",   () => { exportSVG();  els.exportMenu.classList.remove("open"); });
+  els.exportBtn.addEventListener("click", () => exportSVG());
 
   function safeFilename() {
     const title = (currentData.title || "diagramme-pert")
@@ -280,44 +269,6 @@
       URL.createObjectURL(new Blob([svgStr], { type: "image/svg+xml;charset=utf-8" })),
       `${safeFilename()}.svg`
     );
-  }
-
-  function exportPNG(scale) {
-    if (!lastResult) return;
-    const svgEl = els.svg;
-    const w = Number(svgEl.getAttribute("width"));
-    const h = Number(svgEl.getAttribute("height"));
-
-    const ns = "http://www.w3.org/2000/svg";
-    const bg = document.createElementNS(ns, "rect");
-    bg.setAttribute("x", 0); bg.setAttribute("y", 0);
-    bg.setAttribute("width", w); bg.setAttribute("height", h);
-    bg.setAttribute("fill", "#ffffff");
-    svgEl.insertBefore(bg, svgEl.firstChild);
-
-    const svgStr = new XMLSerializer().serializeToString(svgEl);
-    svgEl.removeChild(bg);
-
-    const blob = new Blob([svgStr], { type: "image/svg+xml;charset=utf-8" });
-    const url  = URL.createObjectURL(blob);
-
-    const img = new Image();
-    img.onload = () => {
-      const canvas = document.createElement("canvas");
-      canvas.width  = w * scale;
-      canvas.height = h * scale;
-      const ctx = canvas.getContext("2d");
-      ctx.fillStyle = "#ffffff";
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.scale(scale, scale);
-      ctx.drawImage(img, 0, 0);
-      URL.revokeObjectURL(url);
-      canvas.toBlob(pngBlob => {
-        triggerDownload(URL.createObjectURL(pngBlob), `${safeFilename()}@${scale}x.png`);
-      }, "image/png");
-    };
-    img.onerror = () => URL.revokeObjectURL(url);
-    img.src = url;
   }
 
   function triggerDownload(url, filename) {
