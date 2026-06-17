@@ -43,11 +43,15 @@
     zoomOut:       document.getElementById("zoom-out"),
     zoomFit:       document.getElementById("zoom-fit"),
     zoomPct:       document.getElementById("zoom-pct"),
+    dirToggle:     document.getElementById("dir-toggle"),
+    dirIconLR:     document.getElementById("dir-icon-lr"),
+    dirIconTB:     document.getElementById("dir-icon-tb"),
     exportBtn:     document.getElementById("export-btn"),
   };
 
-  let currentData = clone(EXAMPLE);
-  let lastResult  = null;
+  let currentData      = clone(EXAMPLE);
+  let lastResult       = null;
+  let currentDirection = 'LR'; // 'LR' gauche→droite | 'TB' haut→bas
 
   // ═══════════════════════════ DRAWER ═══════════════════════════
   function openDrawer()  {
@@ -209,7 +213,7 @@
   function drawResult(result, refit) {
     els.emptyState.style.display  = "none";
     els.svg.style.display         = "block";
-    PertRender.render(els.svg, result);
+    PertRender.render(els.svg, result, currentDirection);
 
     els.projectTitle.textContent = result.title;
     currentData.title = result.title;
@@ -227,6 +231,18 @@
     els.errorBox.style.display = "block";
   }
   function hideError() { els.errorBox.style.display = "none"; }
+
+  // ═══════════════════════════ DIRECTION ═══════════════════════════
+  els.dirToggle.addEventListener("click", () => {
+    currentDirection = currentDirection === 'LR' ? 'TB' : 'LR';
+    const toLR = currentDirection === 'LR';
+    els.dirIconLR.style.display = toLR ? ''     : 'none';
+    els.dirIconTB.style.display = toLR ? 'none' : '';
+    els.dirToggle.title = toLR
+      ? 'Passer en affichage haut → bas'
+      : 'Passer en affichage gauche → droite';
+    if (lastResult) drawResult(lastResult, true);
+  });
 
   // ═══════════════════════════ EXPORT ═══════════════════════════
   els.exportBtn.addEventListener("click", () => exportSVG());

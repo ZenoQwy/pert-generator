@@ -151,7 +151,7 @@ svg#pert-svg { display: block; pointer-events: none; }
 #empty-state strong { color: var(--ink-2); font-size: 13px; font-weight: 600; }
 #empty-state span   { font-size: 11.5px; line-height: 1.6; }
 
-/* ——— Zoom controls ——— */
+/* ——— Zoom + direction controls ——— */
 #zoom-controls {
   position: absolute; bottom: 20px; right: 20px;
   display: flex; flex-direction: column; gap: 4px; z-index: 10;
@@ -172,6 +172,18 @@ svg#pert-svg { display: block; pointer-events: none; }
   border: 1px solid var(--border); border-radius: 7px;
   padding: 5px 0;
 }
+#dir-toggle {
+  width: 32px; height: 32px; border-radius: 7px;
+  border: 1px solid var(--border);
+  background: var(--panel); color: var(--ink-2);
+  cursor: pointer; padding: 0;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.09);
+  transition: border-color .1s, background .1s;
+  margin-top: 6px;
+}
+#dir-toggle:hover { border-color: var(--ink-3); background: #fafafa; }
+#dir-toggle svg { width: 16px; height: 16px; }
 
 /* ——— Node legend overlay ——— */
 #node-legend {
@@ -532,6 +544,22 @@ svg#pert-svg { display: block; pointer-events: none; }
         <div id="zoom-pct">100%</div>
         <button class="zoom-btn" id="zoom-out">–</button>
         <button class="zoom-btn" id="zoom-fit" title="Ajuster à l'écran" style="font-size:11px;">⤢</button>
+        <!-- direction toggle — l'icône change selon le mode actif -->
+        <button id="dir-toggle" title="Changer l'orientation du diagramme">
+          <!-- icône LR par défaut, remplacée via JS -->
+          <svg id="dir-icon-lr" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="1" y="5" width="4" height="6" rx="1"/>
+            <rect x="11" y="5" width="4" height="6" rx="1"/>
+            <line x1="5" y1="8" x2="11" y2="8"/>
+            <polyline points="9.5,6.5 11,8 9.5,9.5"/>
+          </svg>
+          <svg id="dir-icon-tb" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="display:none">
+            <rect x="5" y="1" width="6" height="4" rx="1"/>
+            <rect x="5" y="11" width="6" height="4" rx="1"/>
+            <line x1="8" y1="5" x2="8" y2="11"/>
+            <polyline points="6.5,9.5 8,11 9.5,9.5"/>
+          </svg>
+        </button>
       </div>
     </div>
   </div>
