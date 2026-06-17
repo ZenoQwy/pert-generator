@@ -122,35 +122,14 @@ html, body {
 #export-btn svg { width: 13px; height: 13px; }
 
 
-/* ——— Legend bar ——— */
-#legend {
-  display: flex; gap: 20px; align-items: center;
-  padding: 8px 20px;
-  font-size: 11px; color: var(--ink-3);
-  flex-wrap: wrap;
-  border-bottom: 1px solid var(--border-s);
-  background: var(--panel);
-  z-index: 5;
-  flex-shrink: 0;
-}
-.legend-item { display: flex; align-items: center; gap: 5px; }
-.legend-swatch {
-  width: 11px; height: 11px; border-radius: 3px;
-  display: inline-block; flex-shrink: 0;
-}
-.legend-line {
-  width: 18px; height: 0;
-  border-top: 2px solid;
-  display: inline-block;
-}
 
 /* ——— Viewport ——— */
 #viewport {
   flex: 1; position: relative; overflow: hidden;
   cursor: grab;
-  background-color: var(--paper);
-  background-image: radial-gradient(circle, rgba(0,0,0,0.07) 1px, transparent 1px);
-  background-size: 20px 20px;
+  background-color: #e9e7e3;
+  background-image: radial-gradient(circle, rgba(0,0,0,0.1) 1px, transparent 1px);
+  background-size: 22px 22px;
 }
 #viewport.dragging { cursor: grabbing; }
 #viewport-inner {
@@ -165,10 +144,12 @@ svg#pert-svg { display: block; pointer-events: none; }
   position: absolute; inset: 0;
   display: flex; flex-direction: column;
   align-items: center; justify-content: center;
-  gap: 8px; color: var(--ink-3); text-align: center;
+  gap: 10px; color: var(--ink-3); text-align: center;
+  pointer-events: none;
 }
-#empty-state strong { color: var(--ink-2); font-size: 14px; }
-#empty-state span   { font-size: 12px; }
+#empty-state svg { opacity: .25; }
+#empty-state strong { color: var(--ink-2); font-size: 13px; font-weight: 600; }
+#empty-state span   { font-size: 11.5px; line-height: 1.6; }
 
 /* ——— Zoom controls ——— */
 #zoom-controls {
@@ -181,10 +162,10 @@ svg#pert-svg { display: block; pointer-events: none; }
   background: var(--panel); color: var(--ink-2);
   font-size: 15px; font-weight: 600; cursor: pointer;
   display: flex; align-items: center; justify-content: center;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.09);
   transition: border-color .1s, background .1s;
 }
-.zoom-btn:hover { border-color: var(--ink-3); background: var(--paper); }
+.zoom-btn:hover { border-color: var(--ink-3); background: #fafafa; }
 #zoom-pct {
   text-align: center; font-size: 10px; font-family: var(--mono);
   color: var(--ink-3); background: var(--panel);
@@ -198,27 +179,28 @@ svg#pert-svg { display: block; pointer-events: none; }
   z-index: 10;
   background: var(--panel);
   border: 1px solid var(--border);
-  border-radius: 10px;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.07);
-  padding: 10px 12px;
-  min-width: 218px;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+  padding: 12px 14px;
+  width: 248px;
 }
 #node-legend-title {
-  font-size: 9px; font-weight: 700; text-transform: uppercase;
-  letter-spacing: 0.08em; color: var(--ink-3); margin-bottom: 8px;
+  font-size: 8.5px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.09em; color: var(--ink-3); margin-bottom: 10px;
 }
-#node-legend-badge-row {
-  display: flex; align-items: flex-start; gap: 8px;
-  margin-top: 8px; padding-top: 8px;
-  border-top: 1px solid var(--border-s);
+/* wrapper pour badge en coin */
+#nl-diagram {
+  position: relative;
+  margin-bottom: 8px;
 }
-#node-legend-badge {
-  font-family: var(--mono); font-size: 9px; font-weight: 700;
+#nl-badge-corner {
+  position: absolute; top: 0; right: 0;
+  font-family: var(--mono); font-size: 8px; font-weight: 700;
   background: var(--blue); color: #fff;
-  padding: 2px 6px; border-radius: 4px; flex-shrink: 0; margin-top: 1px;
-}
-#node-legend-badge-lbl {
-  font-size: 8px; color: var(--ink-3); line-height: 1.45;
+  padding: 2px 5px;
+  border-radius: 0 5px 0 4px;
+  line-height: 1.4;
+  z-index: 2;
 }
 #node-legend-box {
   border: 1.5px solid var(--blue);
@@ -231,7 +213,7 @@ svg#pert-svg { display: block; pointer-events: none; }
 .nl-cell {
   flex: 1; display: flex; flex-direction: column;
   align-items: center; justify-content: center;
-  padding: 5px 6px; gap: 2px; min-width: 0;
+  padding: 5px 4px; gap: 2px; min-width: 0;
 }
 .nl-cell.nl-center { flex-direction: row; gap: 4px; padding: 5px 10px; }
 .nl-num {
@@ -239,14 +221,38 @@ svg#pert-svg { display: block; pointer-events: none; }
   color: var(--blue); line-height: 1;
 }
 .nl-mid .nl-num {
-  font-family: var(--sans); font-size: 10px; font-weight: 600;
+  font-family: var(--sans); font-size: 9.5px; font-weight: 600;
   color: var(--ink-2);
 }
-.nl-mid em { font-style: italic; color: var(--ink-3); font-size: 9.5px; }
-.nl-lbl {
-  font-size: 8px; color: var(--ink-3);
-  text-align: center; line-height: 1.35;
+.nl-mid em { font-style: italic; color: var(--ink-3); font-size: 9px; }
+.nl-lbl { font-size: 7.5px; color: var(--ink-3); text-align: center; line-height: 1.35; }
+
+/* note badge */
+#nl-badge-note {
+  display: flex; align-items: flex-start; gap: 7px;
+  margin-top: 7px; font-size: 8px; color: var(--ink-3); line-height: 1.45;
 }
+#nl-badge-tag {
+  font-family: var(--mono); font-size: 8px; font-weight: 700;
+  background: var(--blue); color: #fff;
+  padding: 1px 5px; border-radius: 3px; flex-shrink: 0; margin-top: 1px;
+}
+
+/* grid de types */
+#nl-types {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 6px 8px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border-s);
+  margin-top: 10px;
+}
+.nl-type { display: flex; align-items: center; gap: 5px; font-size: 9px; color: var(--ink-3); }
+.nl-sw { width: 10px; height: 10px; border-radius: 2px; display: inline-block; flex-shrink: 0; }
+.nl-sw.crit { background: var(--red-bg);  border: 1.5px solid var(--red); }
+.nl-sw.norm { background: var(--blue-bg); border: 1.5px solid var(--blue); }
+.nl-ln { width: 16px; height: 0; border-top: 2px solid; display: inline-block; flex-shrink: 0; }
+.nl-ln.crit { border-color: var(--red); }
+.nl-ln.norm { border-color: var(--blue); border-top-style: dashed; }
 
 /* ═══════════════════════════ DRAWER ═══════════════════════════ */
 #drawer-overlay {
@@ -455,81 +461,69 @@ svg#pert-svg { display: block; pointer-events: none; }
       </div>
     </div>
 
-    <!-- ——— Legend bar ——— -->
-    <div id="legend">
-      <div class="legend-item">
-        <span class="legend-swatch" style="background:var(--red-bg);border:1.5px solid var(--red)"></span>
-        Tâche critique
-      </div>
-      <div class="legend-item">
-        <span class="legend-swatch" style="background:var(--blue-bg);border:1.5px solid var(--blue)"></span>
-        Tâche non critique
-      </div>
-      <div class="legend-item">
-        <span class="legend-swatch" style="background:var(--stone-bg);border:1.5px solid var(--stone)"></span>
-        Jalon (durée 0)
-      </div>
-      <div class="legend-item">
-        <span class="legend-line" style="border-color:var(--red)"></span>
-        Chemin critique
-      </div>
-      <div class="legend-item">
-        <span class="legend-line" style="border-color:var(--blue);border-top-style:dashed"></span>
-        Marge &gt; 0
-      </div>
-      <div class="legend-item">
-        <span style="font-family:var(--mono);font-size:9px;font-weight:700;background:var(--blue);color:#fff;padding:1px 5px;border-radius:3px;">+N</span>
-        Marge totale (jours)
-      </div>
-    </div>
-
     <!-- ——— Viewport ——— -->
     <div id="viewport">
       <div id="empty-state">
-        <strong>Aucune donnée valide</strong>
-        <span>Ouvre le panneau « Données » pour éditer le projet.</span>
+        <svg width="48" height="48" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="4" y="14" width="14" height="20" rx="3"/>
+          <rect x="30" y="4"  width="14" height="20" rx="3"/>
+          <rect x="30" y="30" width="14" height="14" rx="3"/>
+          <line x1="18" y1="24" x2="30" y2="14"/>
+          <line x1="18" y1="24" x2="30" y2="37"/>
+        </svg>
+        <strong>Aucun diagramme chargé</strong>
+        <span>Cliquez sur <b>Données</b> pour saisir votre projet<br>ou sur <b>Exemple</b> pour voir un aperçu.</span>
       </div>
       <div id="viewport-inner">
         <svg id="pert-svg" xmlns="http://www.w3.org/2000/svg" style="display:none;"></svg>
       </div>
 
-      <!-- Node legend overlay -->
+      <!-- Node legend + types overlay -->
       <div id="node-legend">
-        <div id="node-legend-title">Structure d'une case</div>
-        <div id="node-legend-box">
-          <div class="nl-row nl-top">
-            <div class="nl-cell">
-              <span class="nl-num">ES</span>
-              <span class="nl-lbl">Début<br>au plus tôt</span>
+        <div id="node-legend-title">Lecture des cases</div>
+        <div id="nl-diagram">
+          <div id="nl-badge-corner">+N</div>
+          <div id="node-legend-box">
+            <div class="nl-row">
+              <div class="nl-cell">
+                <span class="nl-num">ES</span>
+                <span class="nl-lbl">Début<br>au plus tôt</span>
+              </div>
+              <div class="nl-sep-v"></div>
+              <div class="nl-cell">
+                <span class="nl-num">EF</span>
+                <span class="nl-lbl">Fin<br>au plus tôt</span>
+              </div>
             </div>
-            <div class="nl-sep-v"></div>
-            <div class="nl-cell">
-              <span class="nl-num">EF</span>
-              <span class="nl-lbl">Fin<br>au plus tôt</span>
+            <div class="nl-sep-h"></div>
+            <div class="nl-row nl-mid">
+              <div class="nl-cell nl-center">
+                <span class="nl-num">ID — Nom <em>(durée)</em></span>
+              </div>
             </div>
-          </div>
-          <div class="nl-sep-h"></div>
-          <div class="nl-row nl-mid">
-            <div class="nl-cell nl-center">
-              <span class="nl-num">ID — Nom <em>(durée)</em></span>
-            </div>
-          </div>
-          <div class="nl-sep-h"></div>
-          <div class="nl-row nl-bot">
-            <div class="nl-cell">
-              <span class="nl-num">LS</span>
-              <span class="nl-lbl">Début<br>au plus tard</span>
-            </div>
-            <div class="nl-sep-v"></div>
-            <div class="nl-cell">
-              <span class="nl-num">LF</span>
-              <span class="nl-lbl">Fin<br>au plus tard</span>
+            <div class="nl-sep-h"></div>
+            <div class="nl-row">
+              <div class="nl-cell">
+                <span class="nl-num">LS</span>
+                <span class="nl-lbl">Début<br>au plus tard</span>
+              </div>
+              <div class="nl-sep-v"></div>
+              <div class="nl-cell">
+                <span class="nl-num">LF</span>
+                <span class="nl-lbl">Fin<br>au plus tard</span>
+              </div>
             </div>
           </div>
         </div>
-        <div id="node-legend-badge-row">
-          <span id="node-legend-badge">+N</span>
-          <span id="node-legend-badge-lbl">Marge totale : nombre de jours<br>de retard possibles sans impacter<br>la durée totale du projet</span>
+        <div id="nl-badge-note">
+          <span id="nl-badge-tag">+N</span>
+          <span>Marge totale : jours disponibles sans retarder la fin du projet</span>
+        </div>
+        <div id="nl-types">
+          <div class="nl-type"><span class="nl-sw crit"></span>Tâche critique</div>
+          <div class="nl-type"><span class="nl-sw norm"></span>Non critique</div>
+          <div class="nl-type"><span class="nl-ln crit"></span>Lien critique</div>
+          <div class="nl-type"><span class="nl-ln norm"></span>Marge &gt; 0</div>
         </div>
       </div>
 

@@ -104,6 +104,7 @@
   });
 
   els.resetBtn.addEventListener("click", () => {
+    if (!confirm("Charger l'exemple ? Les données actuelles seront remplacées.")) return;
     currentData = clone(EXAMPLE);
     syncJsonFromData();
     renderForm();
