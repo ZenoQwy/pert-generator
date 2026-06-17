@@ -1,34 +1,30 @@
 /**
  * pert-render.js
  * Construit le SVG du réseau PERT à partir du résultat de PertEngine.computePert().
- * Layout : grille à colonnes (niveau topologique) x rangées communes -> alignement
- * vertical strict des tâches de même niveau, quel que soit leur nombre dans les
- * colonnes voisines.
  */
 
 const PertRender = (() => {
 
-  const NODE_W = 140;
-  const NODE_H = 64;     // 3 compartiments égaux
-  const COL_GAP = 100;
-  const ROW_GAP = 30;
-  const PAD = 50;
+  const NODE_W  = 172;
+  const NODE_H  = 84;
+  const COL_GAP = 96;
+  const ROW_GAP = 28;
+  const PAD     = 56;
 
   function render(svgEl, result) {
     const byId = new Map(result.tasks.map(t => [t.id, t]));
 
-    // ----- 1. Regrouper par colonne (level) -----
+    // 1. Regrouper par colonne (level)
     const columns = new Map();
     for (const t of result.tasks) {
       if (!columns.has(t.level)) columns.set(t.level, []);
       columns.get(t.level).push(t);
     }
-    const levels = [...columns.keys()].sort((a, b) => a - b);
+    const levels  = [...columns.keys()].sort((a, b) => a - b);
     const maxRows = Math.max(...levels.map(l => columns.get(l).length));
 
-    // ----- 2. Assigner une rangée à chaque tâche (grille commune) -----
-    const positions = new Map(); // id -> { x, y, cx, cy, row }
-
+    // 2. Positionner chaque nœud
+    const positions = new Map();
     for (const lvl of levels) {
       let nodes = columns.get(lvl).slice();
       nodes.sort((a, b) => barycenter(a, positions) - barycenter(b, positions));
@@ -47,17 +43,21 @@ const PertRender = (() => {
     compactRows(positions);
 
     const usedRows = Math.max(...[...positions.values()].map(p => p.row)) + 1;
-    const totalW = PAD * 2 + levels.length * NODE_W + (levels.length - 1) * COL_GAP;
-    const totalH = PAD * 2 + usedRows * NODE_H + (usedRows - 1) * ROW_GAP;
+    const totalW   = PAD * 2 + levels.length * NODE_W + (levels.length - 1) * COL_GAP;
+    const totalH   = PAD * 2 + usedRows * NODE_H + (usedRows - 1) * ROW_GAP;
 
-    svgEl.setAttribute("viewBox", `0 0 ${totalW} ${totalH}`);
-    svgEl.setAttribute("width", totalW);
-    svgEl.setAttribute("height", totalH);
+    svgEl.setAttribute("viewBox",     `0 0 ${totalW} ${totalH}`);
+    svgEl.setAttribute("width",       totalW);
+    svgEl.setAttribute("height",      totalH);
     svgEl.setAttribute("data-base-w", totalW);
     svgEl.setAttribute("data-base-h", totalH);
     svgEl.innerHTML = "";
 
     svgEl.appendChild(buildDefs());
+
+    // Fond blanc (pour export propre)
+    const bg = svgEl1("rect", { x: 0, y: 0, width: totalW, height: totalH, fill: "#ffffff" });
+    svgEl.appendChild(bg);
 
     const edgeLayer = svgEl1("g", { class: "edges" });
     for (const e of result.edges) {
@@ -76,21 +76,19 @@ const PertRender = (() => {
     return { width: totalW, height: totalH };
   }
 
-  // Si une rangée entière (sur toutes les colonnes) est vide, referme l'espace.
   function compactRows(positions) {
     const allRows = [...positions.values()].map(p => p.row);
-    const maxRow = Math.max(...allRows);
-    const used = new Set(allRows);
-    const emptyRows = [];
-    for (let r = 0; r <= maxRow; r++) if (!used.has(r)) emptyRows.push(r);
-    if (emptyRows.length === 0) return;
-
+    const maxRow  = Math.max(...allRows);
+    const used    = new Set(allRows);
+    const empty   = [];
+    for (let r = 0; r <= maxRow; r++) if (!used.has(r)) empty.push(r);
+    if (empty.length === 0) return;
     for (const pos of positions.values()) {
-      const shift = emptyRows.filter(r => r < pos.row).length;
+      const shift = empty.filter(r => r < pos.row).length;
       if (shift > 0) {
         pos.row -= shift;
-        pos.y = PAD + pos.row * (NODE_H + ROW_GAP);
-        pos.cy = pos.y + NODE_H / 2;
+        pos.y    = PAD + pos.row * (NODE_H + ROW_GAP);
+        pos.cy   = pos.y + NODE_H / 2;
       }
     }
   }
@@ -98,9 +96,7 @@ const PertRender = (() => {
   function barycenter(task, positions) {
     if (task.predecessors.length === 0) return 0;
     const rows = task.predecessors
-      .map(p => positions.get(p))
-      .filter(Boolean)
-      .map(p => p.row);
+      .map(p => positions.get(p)).filter(Boolean).map(p => p.row);
     if (rows.length === 0) return 0;
     return rows.reduce((a, b) => a + b, 0) / rows.length;
   }
@@ -108,88 +104,121 @@ const PertRender = (() => {
   function buildDefs() {
     const defs = svgEl1("defs");
     defs.innerHTML = `
-      <marker id="pert-arrow-crit" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-        <path d="M2 1L8 5L2 9" fill="none" stroke="#b3402c" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+      <filter id="node-shadow" x="-8%" y="-8%" width="116%" height="130%">
+        <feDropShadow dx="0" dy="1.5" stdDeviation="2.5" flood-color="#00000014"/>
+      </filter>
+      <marker id="arr-crit" viewBox="0 0 10 10" refX="9" refY="5"
+              markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+        <path d="M2 1.5L8 5L2 8.5" fill="none" stroke="#b83229"
+              stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
       </marker>
-      <marker id="pert-arrow-norm" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-        <path d="M2 1L8 5L2 9" fill="none" stroke="#2f5d8a" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+      <marker id="arr-norm" viewBox="0 0 10 10" refX="9" refY="5"
+              markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+        <path d="M2 1.5L8 5L2 8.5" fill="none" stroke="#1f56a3"
+              stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
       </marker>`;
     return defs;
   }
 
   function buildEdge(a, b, critical) {
-    const x1 = a.x + NODE_W;
-    const y1 = a.cy;
-    const x2 = b.x;
-    const y2 = b.cy;
+    const x1 = a.x + NODE_W, y1 = a.cy;
+    const x2 = b.x,          y2 = b.cy;
     const midX = (x1 + x2) / 2;
-
     return svgEl1("path", {
       d: `M${x1},${y1} C${midX},${y1} ${midX},${y2} ${x2},${y2}`,
       class: critical ? "edge-critical" : "edge-normal",
-      "stroke-width": critical ? "2" : "1.4",
-      "marker-end": critical ? "url(#pert-arrow-crit)" : "url(#pert-arrow-norm)"
+      "stroke-width":  critical ? "2.2" : "1.5",
+      "marker-end":    critical ? "url(#arr-crit)" : "url(#arr-norm)"
     });
   }
 
-  // Nœud à exactement 3 compartiments horizontaux égaux :
-  //  1) ES | EF
-  //  2) ID — nom (durée)
-  //  3) LS | LF
   function buildNode(task, pos) {
     const isJalon = task.duration === 0;
-    const cls = isJalon ? "jalon" : (task.critical ? "critical" : "normal");
+    const theme   = isJalon ? "jalon" : (task.critical ? "critical" : "normal");
+
+    const colors = {
+      critical: { fill: "#fdf0ef", stroke: "#b83229", text: "#7a2018", num: "#b83229" },
+      normal:   { fill: "#edf3fc", stroke: "#1f56a3", text: "#153b72", num: "#1f56a3" },
+      jalon:    { fill: "#f3f1ec", stroke: "#5e5749", text: "#3d362b", num: "#5e5749" }
+    };
+    const c = colors[theme];
+
     const g = svgEl1("g", { class: "node-group", "data-id": task.id });
 
-    const rowH = NODE_H / 3;
+    // Shadow + rounded rect
     const rect = svgEl1("rect", {
-      x: pos.x, y: pos.y, width: NODE_W, height: NODE_H, rx: 6,
-      class: `node-rect ${cls}`,
-      "stroke-width": task.critical && !isJalon ? "2" : "1.4"
+      x: pos.x, y: pos.y, width: NODE_W, height: NODE_H, rx: 8,
+      fill: c.fill, stroke: c.stroke,
+      "stroke-width": task.critical && !isJalon ? "2" : "1.5",
+      filter: "url(#node-shadow)"
     });
     g.appendChild(rect);
 
-    const strokeColor = isJalon ? "#6b6358" : (task.critical ? "#b3402c" : "#2f5d8a");
-    const textColor = isJalon ? "#4a4438" : (task.critical ? "#7a2a1c" : "#1f3f5c");
+    const rowH = NODE_H / 3;
 
-    g.appendChild(svgEl1("line", {
-      x1: pos.x, x2: pos.x + NODE_W, y1: pos.y + rowH, y2: pos.y + rowH,
-      stroke: strokeColor, opacity: 0.55, "stroke-width": 1
-    }));
-    g.appendChild(svgEl1("line", {
-      x1: pos.x, x2: pos.x + NODE_W, y1: pos.y + rowH * 2, y2: pos.y + rowH * 2,
-      stroke: strokeColor, opacity: 0.55, "stroke-width": 1
-    }));
-    g.appendChild(svgEl1("line", {
-      x1: pos.x + NODE_W / 2, x2: pos.x + NODE_W / 2, y1: pos.y, y2: pos.y + rowH,
-      stroke: strokeColor, opacity: 0.4, "stroke-width": 1
-    }));
-    g.appendChild(svgEl1("line", {
-      x1: pos.x + NODE_W / 2, x2: pos.x + NODE_W / 2, y1: pos.y + rowH * 2, y2: pos.y + NODE_H,
-      stroke: strokeColor, opacity: 0.4, "stroke-width": 1
-    }));
+    // Horizontal dividers
+    g.appendChild(hline(pos.x, pos.x + NODE_W, pos.y + rowH,     c.stroke));
+    g.appendChild(hline(pos.x, pos.x + NODE_W, pos.y + rowH * 2, c.stroke));
 
-    g.appendChild(svgText(pos.x + NODE_W * 0.25, pos.y + rowH * 0.5, task.es, textColor, 13, "node-label-val"));
-    g.appendChild(svgText(pos.x + NODE_W * 0.75, pos.y + rowH * 0.5, task.ef, textColor, 13, "node-label-val"));
+    // Vertical dividers (top & bottom rows only)
+    g.appendChild(vline(pos.x + NODE_W / 2, pos.y,           pos.y + rowH,     c.stroke));
+    g.appendChild(vline(pos.x + NODE_W / 2, pos.y + rowH * 2, pos.y + NODE_H,  c.stroke));
 
-    const namePart = task.name && task.name !== task.id ? ` ${truncate(task.name, 14)}` : "";
-    const label = isJalon ? `${task.id}${namePart}` : `${task.id}${namePart} (${task.duration}j)`;
-    g.appendChild(svgText(pos.x + NODE_W / 2, pos.y + rowH * 1.5, label, textColor, 11, "node-label-id"));
+    // Row 1 — ES | EF
+    g.appendChild(svgText(pos.x + NODE_W * 0.25, pos.y + rowH * 0.5, task.es, c.num, 14, "bold", "node-label-val"));
+    g.appendChild(svgText(pos.x + NODE_W * 0.75, pos.y + rowH * 0.5, task.ef, c.num, 14, "bold", "node-label-val"));
 
-    g.appendChild(svgText(pos.x + NODE_W * 0.25, pos.y + rowH * 2.5, task.ls, textColor, 13, "node-label-val"));
-    g.appendChild(svgText(pos.x + NODE_W * 0.75, pos.y + rowH * 2.5, task.lf, textColor, 13, "node-label-val"));
+    // Row 2 — ID / Name (duration)
+    const namePart  = task.name && task.name !== task.id ? ` ${truncate(task.name, 13)}` : "";
+    const durPart   = isJalon ? "" : ` (${task.duration}j)`;
+    const midLabel  = `${task.id}${namePart}${durPart}`;
+    g.appendChild(svgText(pos.x + NODE_W / 2, pos.y + rowH * 1.5, midLabel, c.text, 10.5, "600", "node-label-id"));
+
+    // Row 3 — LS | LF
+    g.appendChild(svgText(pos.x + NODE_W * 0.25, pos.y + rowH * 2.5, task.ls, c.num, 14, "bold", "node-label-val"));
+    g.appendChild(svgText(pos.x + NODE_W * 0.75, pos.y + rowH * 2.5, task.lf, c.num, 14, "bold", "node-label-val"));
+
+    // Slack badge (non-critical only)
+    if (!task.critical && !isJalon && task.slack > 0) {
+      const bx = pos.x + NODE_W - 1, by = pos.y + 1;
+      const badge = svgEl1("g");
+      badge.appendChild(svgEl1("rect", {
+        x: bx - 22, y: by, width: 22, height: 14,
+        rx: 4, fill: "#1f56a3", opacity: "0.85"
+      }));
+      const bt = svgEl1("text", {
+        x: bx - 11, y: by + 7, "text-anchor": "middle",
+        "dominant-baseline": "central", fill: "#fff",
+        "font-size": 8, "font-weight": "700",
+        "font-family": "JetBrains Mono, monospace"
+      });
+      bt.textContent = `+${task.slack}`;
+      badge.appendChild(bt);
+      g.appendChild(badge);
+    }
 
     const title = svgEl1("title");
-    title.textContent = `${task.id} — ${task.name}\nDurée: ${task.duration}j\nES:${task.es} EF:${task.ef} LS:${task.ls} LF:${task.lf}\nMarge: ${task.slack}${task.critical ? " (critique)" : ""}`;
+    title.textContent = `${task.id} — ${task.name}\nDurée: ${task.duration}j  |  ES:${task.es}  EF:${task.ef}  LS:${task.ls}  LF:${task.lf}  Marge:${task.slack}${task.critical ? " (critique)" : ""}`;
     g.appendChild(title);
 
     return g;
   }
 
-  function svgText(x, y, content, fill, size, cls) {
+  function hline(x1, x2, y, stroke) {
+    return svgEl1("line", { x1, x2, y1: y, y2: y, stroke, opacity: "0.3", "stroke-width": 1 });
+  }
+  function vline(x, y1, y2, stroke) {
+    return svgEl1("line", { x1: x, x2: x, y1, y2, stroke, opacity: "0.25", "stroke-width": 1 });
+  }
+
+  function svgText(x, y, content, fill, size, weight, cls) {
     const t = svgEl1("text", {
-      x, y, "text-anchor": "middle", "dominant-baseline": "central",
-      fill, "font-size": size, class: cls
+      x, y,
+      "text-anchor": "middle",
+      "dominant-baseline": "central",
+      fill, "font-size": size,
+      "font-weight": weight,
+      class: cls
     });
     t.textContent = content;
     return t;
