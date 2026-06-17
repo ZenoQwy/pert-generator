@@ -61,26 +61,28 @@ html, body {
   align-items: center;
   justify-content: space-between;
   padding: 0 20px;
-  height: 56px;
-  border-bottom: 1px solid var(--border);
-  background: var(--panel);
-  z-index: 5;
+  height: 54px;
+  border-bottom: 1px solid #2a2d38;
+  background: #16181e;
+  position: relative;
+  z-index: 20;        /* au-dessus de tout pour que le menu flotte librement */
+  overflow: visible;  /* le menu dropdown doit déborder */
   gap: 12px;
   flex-shrink: 0;
 }
-#toolbar-left  { display: flex; align-items: center; gap: 10px; min-width: 0; }
+#toolbar-left  { display: flex; align-items: center; gap: 10px; min-width: 0; overflow: hidden; }
 #toolbar-right { display: flex; align-items: center; gap: 8px;  flex-shrink: 0; }
 
 #drawer-toggle {
   display: flex; align-items: center; gap: 6px;
   font-family: var(--sans); font-size: 12px; font-weight: 600;
   padding: 7px 11px; border-radius: var(--r-s);
-  border: 1px solid var(--border);
-  background: var(--paper); color: var(--ink-2);
-  cursor: pointer; white-space: nowrap;
-  transition: border-color .15s, background .15s;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.07); color: #c8ccd6;
+  cursor: pointer; white-space: nowrap; flex-shrink: 0;
+  transition: background .15s, border-color .15s;
 }
-#drawer-toggle:hover { border-color: var(--ink-3); background: #fff; }
+#drawer-toggle:hover { background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.2); }
 #drawer-toggle svg { width: 13px; height: 13px; flex-shrink: 0; }
 
 #project-title {
@@ -88,21 +90,21 @@ html, body {
   letter-spacing: -0.02em; margin: 0;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   cursor: text; border-radius: var(--r-s);
-  padding: 4px 6px; margin-left: -6px;
-  outline: none;
+  padding: 4px 7px; margin-left: -7px;
+  outline: none; color: #ffffff;
   transition: background .12s;
 }
-#project-title:hover  { background: var(--paper); }
-#project-title:focus  { background: var(--paper); box-shadow: 0 0 0 2px var(--blue-border); }
+#project-title:hover { background: rgba(255,255,255,0.07); }
+#project-title:focus { background: rgba(255,255,255,0.1); box-shadow: 0 0 0 2px rgba(100,140,255,0.4); }
 
 #stats-bar {
   display: flex; gap: 16px;
-  font-size: 11.5px; color: var(--ink-3);
+  font-size: 11px; color: rgba(255,255,255,0.35);
   white-space: nowrap; overflow: hidden;
 }
-#stats-bar b  { font-family: var(--mono); font-weight: 700; font-size: 11px; color: var(--ink-2); }
-#stats-bar .crit { color: var(--red); }
-#stats-bar .crit b { color: var(--red); }
+#stats-bar b          { font-family: var(--mono); font-weight: 700; font-size: 10.5px; color: rgba(255,255,255,0.7); }
+#stats-bar .crit      { color: rgba(255,255,255,0.35); }
+#stats-bar .crit b    { color: #ff8577; }
 
 /* ——— Export button & dropdown ——— */
 #export-wrap { position: relative; }
@@ -110,56 +112,53 @@ html, body {
 #export-btn {
   display: flex; align-items: center; gap: 6px;
   font-family: var(--sans); font-size: 12px; font-weight: 600;
-  padding: 7px 13px; border-radius: var(--r-s);
-  border: 1px solid var(--blue);
-  background: var(--blue); color: #fff;
+  padding: 7px 14px; border-radius: var(--r-s);
+  border: 1px solid rgba(255,255,255,0.18);
+  background: rgba(255,255,255,0.1); color: #fff;
   cursor: pointer; white-space: nowrap;
   transition: background .12s, border-color .12s;
 }
-#export-btn:hover { background: #1749a0; border-color: #1749a0; }
+#export-btn:hover { background: rgba(255,255,255,0.16); border-color: rgba(255,255,255,0.28); }
 #export-btn svg { width: 13px; height: 13px; }
 
 #export-menu {
   display: none;
-  position: absolute; top: calc(100% + 6px); right: 0;
-  background: var(--panel);
+  position: absolute; top: calc(100% + 8px); right: 0;
+  background: #ffffff;
   border: 1px solid var(--border);
   border-radius: var(--r);
-  box-shadow: 0 8px 24px rgba(0,0,0,0.10);
-  min-width: 190px;
-  z-index: 100;
+  box-shadow: 0 12px 32px rgba(0,0,0,0.18);
+  min-width: 200px;
+  z-index: 999;
   overflow: hidden;
   animation: menuIn .12s ease;
 }
 #export-menu.open { display: block; }
 @keyframes menuIn {
-  from { opacity: 0; transform: translateY(-4px); }
+  from { opacity: 0; transform: translateY(-6px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 .export-item {
-  display: flex; align-items: center; gap: 10px;
-  padding: 10px 14px; cursor: pointer;
-  font-size: 12.5px; color: var(--ink-2);
+  display: flex; align-items: center; gap: 12px;
+  padding: 11px 16px; cursor: pointer;
   transition: background .1s;
 }
 .export-item:hover { background: var(--paper); }
-.export-item-icon {
-  width: 28px; height: 28px;
-  border-radius: 6px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 13px; flex-shrink: 0;
+.export-item-badge {
+  font-family: var(--mono); font-size: 10px; font-weight: 700;
+  padding: 3px 7px; border-radius: 4px; flex-shrink: 0; letter-spacing: 0.04em;
 }
-.export-item-icon.png { background: #edf7f0; color: #1d7a42; }
-.export-item-icon.svg { background: #eef3fc; color: var(--blue); }
-.export-item-desc { display: flex; flex-direction: column; gap: 1px; }
-.export-item-desc strong { font-weight: 600; font-size: 12px; color: var(--ink); }
+.export-item-badge.png { background: #e8f5ee; color: #1a6e3a; }
+.export-item-badge.svg { background: var(--blue-bg); color: var(--blue); }
+.export-item-desc { display: flex; flex-direction: column; gap: 2px; }
+.export-item-desc strong { font-weight: 600; font-size: 12.5px; color: var(--ink); }
 .export-item-desc span   { font-size: 10.5px; color: var(--ink-3); }
-.export-sep { height: 1px; background: var(--border-s); margin: 3px 0; }
+.export-sep { height: 1px; background: var(--border-s); }
 
 /* ——— Legend bar ——— */
 #legend {
   display: flex; gap: 20px; align-items: center;
-  padding: 9px 20px;
+  padding: 8px 20px;
   font-size: 11px; color: var(--ink-3);
   flex-wrap: wrap;
   border-bottom: 1px solid var(--border-s);
@@ -476,24 +475,17 @@ svg#pert-svg { display: block; pointer-events: none; }
           </button>
           <div id="export-menu">
             <div class="export-item" id="export-png-2x">
-              <div class="export-item-icon png">🖼</div>
+              <span class="export-item-badge png">PNG</span>
               <div class="export-item-desc">
-                <strong>PNG — haute résolution</strong>
-                <span>×2 — pour rapports et présentations</span>
-              </div>
-            </div>
-            <div class="export-item" id="export-png-3x">
-              <div class="export-item-icon png">🖨</div>
-              <div class="export-item-desc">
-                <strong>PNG — impression</strong>
-                <span>×3 — qualité impression A4</span>
+                <strong>Image haute résolution</strong>
+                <span>Pour rapports et présentations</span>
               </div>
             </div>
             <div class="export-sep"></div>
             <div class="export-item" id="export-svg">
-              <div class="export-item-icon svg">✦</div>
+              <span class="export-item-badge svg">SVG</span>
               <div class="export-item-desc">
-                <strong>SVG — vectoriel</strong>
+                <strong>Vectoriel</strong>
                 <span>Redimensionnable sans perte</span>
               </div>
             </div>
@@ -523,6 +515,10 @@ svg#pert-svg { display: block; pointer-events: none; }
       <div class="legend-item">
         <span class="legend-line" style="border-color:var(--blue);border-top-style:dashed"></span>
         Marge &gt; 0
+      </div>
+      <div class="legend-item">
+        <span style="font-family:var(--mono);font-size:9px;font-weight:700;background:var(--blue);color:#fff;padding:1px 5px;border-radius:3px;">+N</span>
+        Marge totale (jours)
       </div>
     </div>
 

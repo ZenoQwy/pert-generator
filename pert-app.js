@@ -46,7 +46,6 @@
     exportBtn:     document.getElementById("export-btn"),
     exportMenu:    document.getElementById("export-menu"),
     exportPng2x:   document.getElementById("export-png-2x"),
-    exportPng3x:   document.getElementById("export-png-3x"),
     exportSvg:     document.getElementById("export-svg"),
   };
 
@@ -239,9 +238,8 @@
   document.addEventListener("click", () => els.exportMenu.classList.remove("open"));
   els.exportMenu.addEventListener("click", e => e.stopPropagation());
 
-  els.exportPng2x.addEventListener("click", () => { exportPNG(2);  els.exportMenu.classList.remove("open"); });
-  els.exportPng3x.addEventListener("click", () => { exportPNG(3);  els.exportMenu.classList.remove("open"); });
-  els.exportSvg.addEventListener("click",   () => { exportSVG();   els.exportMenu.classList.remove("open"); });
+  els.exportPng2x.addEventListener("click", () => { exportPNG(2); els.exportMenu.classList.remove("open"); });
+  els.exportSvg.addEventListener("click",   () => { exportSVG();  els.exportMenu.classList.remove("open"); });
 
   function safeFilename() {
     const title = (currentData.title || "diagramme-pert")
@@ -254,25 +252,34 @@
   function exportSVG() {
     if (!lastResult) return;
     const svgEl = els.svg;
+    const w = Number(svgEl.getAttribute("width"));
+    const h = Number(svgEl.getAttribute("height"));
 
-    // Injecter les déclarations de police dans le SVG exporté
-    const fontStyle = document.createElementNS("http://www.w3.org/2000/svg", "style");
-    fontStyle.textContent = `
-      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@600;700&family=JetBrains+Mono:wght@700&display=swap');
-      .node-label-id  { font-family: 'Inter', sans-serif; }
-      .node-label-val { font-family: 'JetBrains Mono', monospace; }
+    const ns  = "http://www.w3.org/2000/svg";
+    const bg  = document.createElementNS(ns, "rect");
+    bg.setAttribute("x", 0); bg.setAttribute("y", 0);
+    bg.setAttribute("width", w); bg.setAttribute("height", h);
+    bg.setAttribute("fill", "#ffffff");
+    svgEl.insertBefore(bg, svgEl.firstChild);
+
+    const style = document.createElementNS(ns, "style");
+    style.textContent = `
+      .node-label-id  { font-family: 'Inter', 'Segoe UI', sans-serif; }
+      .node-label-val { font-family: 'JetBrains Mono', 'Courier New', monospace; }
       .edge-critical  { stroke: #b83229; fill: none; }
       .edge-normal    { stroke: #1f56a3; fill: none; stroke-dasharray: 5 4; }
     `;
-    svgEl.insertBefore(fontStyle, svgEl.firstChild);
+    svgEl.insertBefore(style, svgEl.firstChild);
 
-    const serializer = new XMLSerializer();
-    const svgStr     = serializer.serializeToString(svgEl);
+    const svgStr = new XMLSerializer().serializeToString(svgEl);
 
-    svgEl.removeChild(fontStyle);
+    svgEl.removeChild(style);
+    svgEl.removeChild(bg);
 
-    const blob = new Blob([svgStr], { type: "image/svg+xml;charset=utf-8" });
-    triggerDownload(URL.createObjectURL(blob), `${safeFilename()}.svg`);
+    triggerDownload(
+      URL.createObjectURL(new Blob([svgStr], { type: "image/svg+xml;charset=utf-8" })),
+      `${safeFilename()}.svg`
+    );
   }
 
   function exportPNG(scale) {
@@ -281,10 +288,18 @@
     const w = Number(svgEl.getAttribute("width"));
     const h = Number(svgEl.getAttribute("height"));
 
-    const serializer = new XMLSerializer();
-    const svgStr     = serializer.serializeToString(svgEl);
-    const blob       = new Blob([svgStr], { type: "image/svg+xml;charset=utf-8" });
-    const url        = URL.createObjectURL(blob);
+    const ns = "http://www.w3.org/2000/svg";
+    const bg = document.createElementNS(ns, "rect");
+    bg.setAttribute("x", 0); bg.setAttribute("y", 0);
+    bg.setAttribute("width", w); bg.setAttribute("height", h);
+    bg.setAttribute("fill", "#ffffff");
+    svgEl.insertBefore(bg, svgEl.firstChild);
+
+    const svgStr = new XMLSerializer().serializeToString(svgEl);
+    svgEl.removeChild(bg);
+
+    const blob = new Blob([svgStr], { type: "image/svg+xml;charset=utf-8" });
+    const url  = URL.createObjectURL(blob);
 
     const img = new Image();
     img.onload = () => {

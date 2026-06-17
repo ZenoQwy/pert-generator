@@ -55,10 +55,6 @@ const PertRender = (() => {
 
     svgEl.appendChild(buildDefs());
 
-    // Fond blanc (pour export propre)
-    const bg = svgEl1("rect", { x: 0, y: 0, width: totalW, height: totalH, fill: "#ffffff" });
-    svgEl.appendChild(bg);
-
     const edgeLayer = svgEl1("g", { class: "edges" });
     for (const e of result.edges) {
       const a = positions.get(e.from);
