@@ -69,13 +69,32 @@ const PertRender = (() => {
 
     svgEl.appendChild(buildDefs());
 
-    const edgeLayer = svgEl1("g", { class: "edges" });
+    // Halos blancs dessinés en premier (effet "pont" aux croisements)
+    const haloLayer = svgEl1("g", { class: "edge-halos" });
     for (const e of result.edges) {
       const a = positions.get(e.from);
       const b = positions.get(e.to);
-      edgeLayer.appendChild(buildEdge(a, b, e.critical, TB));
+      haloLayer.appendChild(buildEdgeHalo(a, b, TB));
     }
-    svgEl.appendChild(edgeLayer);
+    svgEl.appendChild(haloLayer);
+
+    // Arêtes non-critiques
+    const normalLayer = svgEl1("g", { class: "edges-normal" });
+    for (const e of result.edges.filter(e => !e.critical)) {
+      const a = positions.get(e.from);
+      const b = positions.get(e.to);
+      normalLayer.appendChild(buildEdge(a, b, false, TB));
+    }
+    svgEl.appendChild(normalLayer);
+
+    // Arêtes critiques toujours au-dessus
+    const critLayer = svgEl1("g", { class: "edges-critical" });
+    for (const e of result.edges.filter(e => e.critical)) {
+      const a = positions.get(e.from);
+      const b = positions.get(e.to);
+      critLayer.appendChild(buildEdge(a, b, true, TB));
+    }
+    svgEl.appendChild(critLayer);
 
     const nodeLayer = svgEl1("g", { class: "nodes" });
     for (const t of result.tasks) {
@@ -138,23 +157,33 @@ const PertRender = (() => {
     return defs;
   }
 
-  function buildEdge(a, b, critical, TB) {
-    let d;
+  function edgePath(a, b, TB) {
     if (TB) {
-      // connexion bas → haut
       const x1 = a.cx, y1 = a.y + NODE_H;
       const x2 = b.cx, y2 = b.y;
       const midY = (y1 + y2) / 2;
-      d = `M${x1},${y1} C${x1},${midY} ${x2},${midY} ${x2},${y2}`;
+      return `M${x1},${y1} C${x1},${midY} ${x2},${midY} ${x2},${y2}`;
     } else {
-      // connexion droite → gauche
       const x1 = a.x + NODE_W, y1 = a.cy;
       const x2 = b.x,          y2 = b.cy;
       const midX = (x1 + x2) / 2;
-      d = `M${x1},${y1} C${midX},${y1} ${midX},${y2} ${x2},${y2}`;
+      return `M${x1},${y1} C${midX},${y1} ${midX},${y2} ${x2},${y2}`;
     }
+  }
+
+  function buildEdgeHalo(a, b, TB) {
     return svgEl1("path", {
-      d,
+      d: edgePath(a, b, TB),
+      stroke: "#ffffff",
+      fill: "none",
+      "stroke-width": "7",
+      "stroke-linecap": "round"
+    });
+  }
+
+  function buildEdge(a, b, critical, TB) {
+    return svgEl1("path", {
+      d: edgePath(a, b, TB),
       class: critical ? "edge-critical" : "edge-normal",
       "stroke-width":  critical ? "2.2" : "1.5",
       "marker-end":    critical ? "url(#arr-crit)" : "url(#arr-norm)"
