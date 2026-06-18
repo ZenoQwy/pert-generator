@@ -51,14 +51,21 @@ const PertRender = (() => {
 
     compactRows(positions, TB);
 
-    // 3. Dimensions du SVG
+    // 3. Dimensions du SVG + espace bypass pour les arêtes longues
     const usedSlots = Math.max(...[...positions.values()].map(p => p.row)) + 1;
+
+    // Arêtes "longues" : sautent au moins un niveau intermédiaire
+    const isLongEdge = e => byId.get(e.to).level - byId.get(e.from).level > 1;
+    const longCount  = result.edges.filter(isLongEdge).length;
+    const BYPASS_STEP = 10; // px entre chaque couloir
+    const bypassExtra = longCount > 0 ? longCount * BYPASS_STEP + 20 : 0;
+
     const totalW = TB
-      ? PAD * 2 + usedSlots  * NODE_W + (usedSlots  - 1) * ROW_GAP
+      ? PAD * 2 + usedSlots  * NODE_W + (usedSlots  - 1) * ROW_GAP + (TB ? bypassExtra : 0)
       : PAD * 2 + levels.length * NODE_W + (levels.length - 1) * COL_GAP;
     const totalH = TB
       ? PAD * 2 + levels.length * NODE_H + (levels.length - 1) * COL_GAP
-      : PAD * 2 + usedSlots  * NODE_H + (usedSlots  - 1) * ROW_GAP;
+      : PAD * 2 + usedSlots  * NODE_H + (usedSlots  - 1) * ROW_GAP + (TB ? 0 : bypassExtra);
 
     svgEl.setAttribute("viewBox",     `0 0 ${totalW} ${totalH}`);
     svgEl.setAttribute("width",       totalW);
@@ -69,31 +76,32 @@ const PertRender = (() => {
 
     svgEl.appendChild(buildDefs());
 
+    // Compteurs de couloir séparés pour critique / non-critique
+    let normBypassIdx = 0, critBypassIdx = 0;
+
     // 1. Arêtes non-critiques en dessous
     const normalLayer = svgEl1("g", { class: "edges-normal" });
     for (const e of result.edges.filter(e => !e.critical)) {
-      const a = positions.get(e.from);
-      const b = positions.get(e.to);
-      normalLayer.appendChild(buildEdge(a, b, false, TB, e.from, e.to));
+      const a = positions.get(e.from), b = positions.get(e.to);
+      const d = isLongEdge(e)
+        ? edgePathLong(a, b, TB, totalW, totalH, normBypassIdx++)
+        : edgePath(a, b, TB);
+      normalLayer.appendChild(buildEdgePath(d, false, e.from, e.to));
     }
     svgEl.appendChild(normalLayer);
 
-    // 2. Halos blancs uniquement sur les arêtes critiques (effet pont)
+    // 2. Halos blancs + arêtes critiques par-dessus tout
     const haloLayer = svgEl1("g", { class: "edge-halos" });
+    const critLayer  = svgEl1("g", { class: "edges-critical" });
     for (const e of result.edges.filter(e => e.critical)) {
-      const a = positions.get(e.from);
-      const b = positions.get(e.to);
-      haloLayer.appendChild(buildEdgeHalo(a, b, TB, e.from, e.to));
+      const a = positions.get(e.from), b = positions.get(e.to);
+      const d = isLongEdge(e)
+        ? edgePathLong(a, b, TB, totalW, totalH, critBypassIdx++)
+        : edgePath(a, b, TB);
+      haloLayer.appendChild(buildEdgeHaloPath(d, e.from, e.to));
+      critLayer.appendChild(buildEdgePath(d, true, e.from, e.to));
     }
     svgEl.appendChild(haloLayer);
-
-    // 3. Arêtes critiques par-dessus tout
-    const critLayer = svgEl1("g", { class: "edges-critical" });
-    for (const e of result.edges.filter(e => e.critical)) {
-      const a = positions.get(e.from);
-      const b = positions.get(e.to);
-      critLayer.appendChild(buildEdge(a, b, true, TB, e.from, e.to));
-    }
     svgEl.appendChild(critLayer);
 
     const nodeLayer = svgEl1("g", { class: "nodes" });
@@ -157,6 +165,7 @@ const PertRender = (() => {
     return defs;
   }
 
+  // Chemin court (niveaux adjacents) — courbe S
   function edgePath(a, b, TB) {
     if (TB) {
       const x1 = a.cx, y1 = a.y + NODE_H;
@@ -171,18 +180,39 @@ const PertRender = (() => {
     }
   }
 
-  function buildEdgeHalo(a, b, TB, from, to) {
+  // Chemin long (saute des niveaux) — dérivation sous/à droite des nœuds
+  function edgePathLong(a, b, TB, totalW, totalH, idx) {
+    const CURVE = 30; // rayon des virages
+    if (TB) {
+      // Dérivation droite (mode haut→bas)
+      const bypassX = totalW - 14 - idx * 10;
+      const x1 = a.cx, y1 = a.y + NODE_H;
+      const x2 = b.cx, y2 = b.y;
+      const midY = (y1 + y2) / 2;
+      return `M${x1},${y1} C${x1},${y1+CURVE} ${bypassX},${y1+CURVE} ${bypassX},${midY}`
+           + ` C${bypassX},${y2-CURVE} ${x2},${y2-CURVE} ${x2},${y2}`;
+    } else {
+      // Dérivation bas (mode gauche→droite)
+      const bypassY = totalH - 14 - idx * 10;
+      const x1 = a.x + NODE_W, y1 = a.cy;
+      const x2 = b.x,          y2 = b.cy;
+      return `M${x1},${y1} C${x1+CURVE},${y1} ${x1+CURVE},${bypassY} ${x1+2*CURVE},${bypassY}`
+           + ` L${x2-2*CURVE},${bypassY}`
+           + ` C${x2-CURVE},${bypassY} ${x2-CURVE},${y2} ${x2},${y2}`;
+    }
+  }
+
+  function buildEdgeHaloPath(d, from, to) {
     return svgEl1("path", {
-      d: edgePath(a, b, TB),
-      stroke: "#ffffff", fill: "none",
+      d, stroke: "#ffffff", fill: "none",
       "stroke-width": "7", "stroke-linecap": "round",
       "data-from": from, "data-to": to
     });
   }
 
-  function buildEdge(a, b, critical, TB, from, to) {
+  function buildEdgePath(d, critical, from, to) {
     return svgEl1("path", {
-      d: edgePath(a, b, TB),
+      d,
       class: critical ? "edge-critical" : "edge-normal",
       "stroke-width": critical ? "2.2" : "1.5",
       "marker-end":   critical ? "url(#arr-crit)" : "url(#arr-norm)",

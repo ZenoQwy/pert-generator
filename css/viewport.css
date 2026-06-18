@@ -84,7 +84,7 @@ svg#pert-svg { display: block; pointer-events: none; }
   45%       { transform: translateY(-5px); }
 }
 #dir-hint {
-  position: absolute; bottom: 24px; right: 62px; z-index: 20;
+  position: absolute; z-index: 20;
   background: var(--ink); color: #fff;
   font-size: 10.5px; font-family: var(--sans); font-weight: 500;
   padding: 6px 11px; border-radius: var(--r-s);
