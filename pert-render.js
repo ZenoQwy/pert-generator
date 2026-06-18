@@ -7,7 +7,7 @@
 const PertRender = (() => {
 
   const NODE_W  = 172;
-  const NODE_H  = 84;
+  const NODE_H  = 96;
   const COL_GAP = 96;   // écart entre niveaux (axe principal)
   const ROW_GAP = 28;   // écart entre nœuds du même niveau (axe secondaire)
   const PAD     = 56;
@@ -283,9 +283,17 @@ const PertRender = (() => {
     g.appendChild(svgText(pos.x + NODE_W * 0.25, pos.y + rowH * 0.5, task.es, c.num, 14, "bold", "node-label-val"));
     g.appendChild(svgText(pos.x + NODE_W * 0.75, pos.y + rowH * 0.5, task.ef, c.num, 14, "bold", "node-label-val"));
 
-    const namePart = task.name && task.name !== task.id ? ` ${truncate(task.name, 13)}` : "";
-    const durPart  = isJalon ? "" : ` (${task.duration}j)`;
-    g.appendChild(svgText(pos.x + NODE_W / 2, pos.y + rowH * 1.5, `${task.id}${namePart}${durPart}`, c.text, 10.5, "600", "node-label-id"));
+    const hasName = task.name && task.name !== task.id;
+    const durPart = isJalon ? "" : ` (${task.duration}j)`;
+    const midCy   = pos.y + rowH * 1.5;
+    if (hasName) {
+      // Ligne 1 : identifiant + durée
+      g.appendChild(svgText(pos.x + NODE_W / 2, midCy - rowH * 0.22, `${task.id}${durPart}`, c.text, 10, "700", "node-label-id"));
+      // Ligne 2 : nom complet (jusqu'à 22 chars)
+      g.appendChild(svgText(pos.x + NODE_W / 2, midCy + rowH * 0.22, truncate(task.name, 22), c.text, 9.5, "500", "node-label-id"));
+    } else {
+      g.appendChild(svgText(pos.x + NODE_W / 2, midCy, `${task.id}${durPart}`, c.text, 10.5, "600", "node-label-id"));
+    }
 
     g.appendChild(svgText(pos.x + NODE_W * 0.25, pos.y + rowH * 2.5, task.ls, c.num, 14, "bold", "node-label-val"));
     g.appendChild(svgText(pos.x + NODE_W * 0.75, pos.y + rowH * 2.5, task.lf, c.num, 14, "bold", "node-label-val"));
