@@ -1,0 +1,13 @@
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body {
+  margin: 0; padding: 0; height: 100%;
+  background: var(--paper);
+  font-family: var(--sans);
+  color: var(--ink);
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+#app          { position: relative; height: 100vh; width: 100%; }
+#canvas-panel { position: absolute; inset: 0; display: flex; flex-direction: column; background: var(--paper); }

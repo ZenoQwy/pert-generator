@@ -1,0 +1,27 @@
+:root {
+  --ink:         #0f1117;
+  --ink-2:       #3a3f4d;
+  --ink-3:       #868fa4;
+  --paper:       #f1f0ed;
+  --panel:       #ffffff;
+  --border:      #dddbd4;
+  --border-s:    #eae8e3;
+
+  --red:         #b83229;
+  --red-bg:      #fdf0ef;
+  --red-border:  #edc5c0;
+
+  --blue:        #1f56a3;
+  --blue-bg:     #edf3fc;
+  --blue-border: #bdd0eb;
+
+  --stone:       #5e5749;
+  --stone-bg:    #f3f1ec;
+  --stone-border:#d5d2c9;
+
+  --r:        8px;
+  --r-s:      5px;
+  --drawer-w: 440px;
+  --mono: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
+  --sans: 'Inter', -apple-system, 'Segoe UI', sans-serif;
+}

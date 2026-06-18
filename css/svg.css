@@ -1,0 +1,7 @@
+.node-rect.critical { fill: var(--red-bg);   stroke: var(--red); }
+.node-rect.normal   { fill: var(--blue-bg);  stroke: var(--blue); }
+.node-rect.jalon    { fill: var(--stone-bg); stroke: var(--stone); }
+.edge-critical      { stroke: var(--red);  fill: none; }
+.edge-normal        { stroke: var(--blue); fill: none; stroke-dasharray: 5 4; }
+.node-label-id      { font-family: var(--sans); font-weight: 700; }
+.node-label-val     { font-family: var(--mono); font-weight: 700; }

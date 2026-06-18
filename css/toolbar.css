@@ -1,0 +1,54 @@
+#toolbar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 20px; height: 54px;
+  border-bottom: 1px solid #2a2d38;
+  background: #16181e;
+  position: relative; z-index: 20; overflow: visible;
+  gap: 12px; flex-shrink: 0;
+}
+#toolbar-left  { display: flex; align-items: center; gap: 10px; min-width: 0; overflow: hidden; }
+#toolbar-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+
+#drawer-toggle {
+  display: flex; align-items: center; gap: 6px;
+  font-family: var(--sans); font-size: 12px; font-weight: 600;
+  padding: 7px 11px; border-radius: var(--r-s);
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.07); color: #c8ccd6;
+  cursor: pointer; white-space: nowrap; flex-shrink: 0;
+  transition: background .15s, border-color .15s;
+}
+#drawer-toggle:hover { background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.2); }
+#drawer-toggle svg   { width: 13px; height: 13px; flex-shrink: 0; }
+
+#project-title {
+  font-size: 14px; font-weight: 700; letter-spacing: -0.02em;
+  margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  cursor: text; border-radius: var(--r-s);
+  padding: 4px 7px; margin-left: -7px;
+  outline: none; color: #ffffff; transition: background .12s;
+}
+#project-title:hover { background: rgba(255,255,255,0.07); }
+#project-title:focus { background: rgba(255,255,255,0.1); box-shadow: 0 0 0 2px rgba(100,140,255,0.4); }
+
+#stats-bar {
+  display: flex; gap: 16px;
+  font-size: 11px; color: rgba(255,255,255,0.35);
+  white-space: nowrap; overflow: hidden;
+}
+#stats-bar b       { font-family: var(--mono); font-weight: 700; font-size: 10.5px; color: rgba(255,255,255,0.7); }
+#stats-bar .crit   { color: rgba(255,255,255,0.35); }
+#stats-bar .crit b { color: #ff8577; }
+
+#export-wrap { position: relative; }
+#export-btn {
+  display: flex; align-items: center; gap: 6px;
+  font-family: var(--sans); font-size: 12px; font-weight: 600;
+  padding: 7px 14px; border-radius: var(--r-s);
+  border: 1px solid rgba(255,255,255,0.18);
+  background: rgba(255,255,255,0.1); color: #fff;
+  cursor: pointer; white-space: nowrap;
+  transition: background .12s, border-color .12s;
+}
+#export-btn:hover { background: rgba(255,255,255,0.16); border-color: rgba(255,255,255,0.28); }
+#export-btn svg   { width: 13px; height: 13px; }
