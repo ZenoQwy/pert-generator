@@ -72,6 +72,15 @@ const PertEngine = (() => {
       t.critical = t.slack === 0;
     }
 
+    // ----- Marge libre : ES(successeur min) − EF -----
+    for (const t of tasks) {
+      if (t.successors.length === 0) {
+        t.freeFloat = projectDuration - t.ef;
+      } else {
+        t.freeFloat = Math.min(...t.successors.map(s => byId.get(s).es)) - t.ef;
+      }
+    }
+
     // ----- Niveau / colonne pour la mise en page (longest path depuis la racine) -----
     for (const id of order) {
       const t = byId.get(id);

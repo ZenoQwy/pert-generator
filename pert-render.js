@@ -197,7 +197,7 @@ const PertRender = (() => {
     g.appendChild(svgText(pos.x + NODE_W * 0.25, pos.y + rowH * 2.5, task.ls, c.num, 14, "bold", "node-label-val"));
     g.appendChild(svgText(pos.x + NODE_W * 0.75, pos.y + rowH * 2.5, task.lf, c.num, 14, "bold", "node-label-val"));
 
-    if (!task.critical && !isJalon && task.slack > 0) {
+    if (task.freeFloat > 0) {
       const bx = pos.x + NODE_W - 1, by = pos.y + 1;
       const badge = svgEl1("g");
       badge.appendChild(svgEl1("rect", {
@@ -210,7 +210,7 @@ const PertRender = (() => {
         "font-size": 8, "font-weight": "700",
         "font-family": "JetBrains Mono, monospace"
       });
-      bt.textContent = `+${task.slack}`;
+      bt.textContent = `+${task.freeFloat}`;
       badge.appendChild(bt);
       g.appendChild(badge);
     }
