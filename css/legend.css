@@ -56,7 +56,3 @@
 .nl-ln.crit { border-color: var(--red); }
 .nl-ln.norm { border-color: var(--blue); border-top-style: dashed; }
 
-#app-version {
-  text-align: right; font-size: 9px; color: var(--ink-3);
-  opacity: 0.5; font-family: var(--mono); margin-top: 8px;
-}

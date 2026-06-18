@@ -69,16 +69,7 @@ const PertRender = (() => {
 
     svgEl.appendChild(buildDefs());
 
-    // Halos blancs dessinés en premier (effet "pont" aux croisements)
-    const haloLayer = svgEl1("g", { class: "edge-halos" });
-    for (const e of result.edges) {
-      const a = positions.get(e.from);
-      const b = positions.get(e.to);
-      haloLayer.appendChild(buildEdgeHalo(a, b, TB));
-    }
-    svgEl.appendChild(haloLayer);
-
-    // Arêtes non-critiques
+    // 1. Arêtes non-critiques en dessous
     const normalLayer = svgEl1("g", { class: "edges-normal" });
     for (const e of result.edges.filter(e => !e.critical)) {
       const a = positions.get(e.from);
@@ -87,7 +78,17 @@ const PertRender = (() => {
     }
     svgEl.appendChild(normalLayer);
 
-    // Arêtes critiques toujours au-dessus
+    // 2. Halos blancs uniquement sur les arêtes critiques :
+    //    crée un vrai "pont" là où le chemin critique croise les autres
+    const haloLayer = svgEl1("g", { class: "edge-halos" });
+    for (const e of result.edges.filter(e => e.critical)) {
+      const a = positions.get(e.from);
+      const b = positions.get(e.to);
+      haloLayer.appendChild(buildEdgeHalo(a, b, TB));
+    }
+    svgEl.appendChild(haloLayer);
+
+    // 3. Arêtes critiques par-dessus tout
     const critLayer = svgEl1("g", { class: "edges-critical" });
     for (const e of result.edges.filter(e => e.critical)) {
       const a = positions.get(e.from);

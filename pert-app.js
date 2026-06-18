@@ -49,7 +49,19 @@
     exportBtn:     document.getElementById("export-btn"),
   };
 
-  let currentData      = clone(EXAMPLE);
+  const LS_KEY = 'pert-generator-data';
+  function loadFromStorage() {
+    try {
+      const raw = localStorage.getItem(LS_KEY);
+      if (raw) return JSON.parse(raw);
+    } catch (_) {}
+    return null;
+  }
+  function saveToStorage(data) {
+    try { localStorage.setItem(LS_KEY, JSON.stringify(data)); } catch (_) {}
+  }
+
+  let currentData      = loadFromStorage() || clone(EXAMPLE);
   let lastResult       = null;
   let currentDirection = 'LR'; // 'LR' gauche→droite | 'TB' haut→bas
 
@@ -202,6 +214,7 @@
       const result = PertEngine.computePert(currentData);
       hideError();
       lastResult = result;
+      saveToStorage(currentData);
       drawResult(result, refit);
     } catch (err) {
       showError(err.message || String(err));
