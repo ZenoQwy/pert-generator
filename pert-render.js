@@ -17,7 +17,7 @@ const PertRender = (() => {
     const TB  = direction === 'TB';
     const byId = new Map(result.tasks.map(t => [t.id, t]));
 
-    // 1. Regrouper par niveau (colonne en LR, ligne en TB)
+    // 1. Colonnes par niveau
     const columns = new Map();
     for (const t of result.tasks) {
       if (!columns.has(t.level)) columns.set(t.level, []);
@@ -25,16 +25,37 @@ const PertRender = (() => {
     }
     const levels = [...columns.keys()].sort((a, b) => a - b);
 
-    // 2. Minimisation des croisements — 5 passes alternées bary prédécesseurs / successeurs
-    const ranks = new Map(); // id → rang dans son niveau
-    // Passe initiale bas→haut
+    // 2. Nœuds virtuels : pour chaque arête sautant N>1 niveaux,
+    //    on insère N-1 fantômes afin que le layout réserve un couloir libre.
+    const longEdgeVIds = new Map(); // "from→to" → [vId, ...]
+    for (const e of result.edges) {
+      const fromLvl = byId.get(e.from).level;
+      const toLvl   = byId.get(e.to).level;
+      if (toLvl - fromLvl <= 1) continue;
+      const vIds = [];
+      let prevId = e.from;
+      for (let lvl = fromLvl + 1; lvl < toLvl; lvl++) {
+        const vId    = `__v_${e.from}_${e.to}_${lvl}`;
+        const nextId = lvl === toLvl - 1 ? e.to : `__v_${e.from}_${e.to}_${lvl + 1}`;
+        const vTask  = { id: vId, level: lvl, _virtual: true,
+                         predecessors: [prevId], successors: [nextId] };
+        vIds.push(vId);
+        prevId = vId;
+        byId.set(vId, vTask);
+        if (!columns.has(lvl)) columns.set(lvl, []);
+        columns.get(lvl).push(vTask);
+      }
+      longEdgeVIds.set(`${e.from}→${e.to}`, vIds);
+    }
+
+    // 3. Multi-pass barycenter (5 passes) sur le graphe augmenté
+    const ranks = new Map();
     for (const lvl of levels) {
       const nodes = columns.get(lvl).slice();
       nodes.sort((a, b) => baryPred(a, ranks) - baryPred(b, ranks));
       columns.set(lvl, nodes);
       nodes.forEach((t, i) => ranks.set(t.id, i));
     }
-    // 2 cycles up/down
     for (let c = 0; c < 2; c++) {
       for (const lvl of [...levels].reverse()) {
         const nodes = columns.get(lvl).slice();
@@ -50,7 +71,7 @@ const PertRender = (() => {
       }
     }
 
-    // 3. Calcul des positions finales depuis les rangs
+    // 4. Positions finales (réels + virtuels)
     const maxSlots = Math.max(...levels.map(l => columns.get(l).length));
     const positions = new Map();
     for (const lvl of levels) {
@@ -68,7 +89,7 @@ const PertRender = (() => {
 
     compactRows(positions, TB);
 
-    // 4. Dimensions du SVG
+    // 5. Dimensions du SVG
     const usedSlots = Math.max(...[...positions.values()].map(p => p.row)) + 1;
     const totalW = TB
       ? PAD * 2 + usedSlots  * NODE_W + (usedSlots  - 1) * ROW_GAP
@@ -77,54 +98,42 @@ const PertRender = (() => {
       ? PAD * 2 + levels.length * NODE_H + (levels.length - 1) * COL_GAP
       : PAD * 2 + usedSlots  * NODE_H + (usedSlots  - 1) * ROW_GAP;
 
-    // Arêtes longues (sautent ≥1 niveau) → arc au-dessus (LR) ou à droite (TB)
-    const isLong   = e => byId.get(e.to).level - byId.get(e.from).level > 1;
-    const longCount = result.edges.filter(isLong).length;
-    const ARC_STEP  = 16; // px entre deux arcs
-    const arcExtra  = longCount > 0 ? longCount * ARC_STEP + 24 : 0;
-
-    // ViewBox étendue côté gauche/haut pour les arcs
-    const vbX = TB ? 0          : 0;
-    const vbY = TB ? 0          : -arcExtra;
-    const vbW = TB ? totalW + arcExtra : totalW;
-    const vbH = TB ? totalH     : totalH + arcExtra;
-
-    svgEl.setAttribute("viewBox",     `${vbX} ${vbY} ${vbW} ${vbH}`);
-    svgEl.setAttribute("width",       vbW);
-    svgEl.setAttribute("height",      vbH);
-    svgEl.setAttribute("data-base-w", vbW);
-    svgEl.setAttribute("data-base-h", vbH);
+    svgEl.setAttribute("viewBox",     `0 0 ${totalW} ${totalH}`);
+    svgEl.setAttribute("width",       totalW);
+    svgEl.setAttribute("height",      totalH);
+    svgEl.setAttribute("data-base-w", totalW);
+    svgEl.setAttribute("data-base-h", totalH);
     svgEl.innerHTML = "";
 
     svgEl.appendChild(buildDefs());
 
-    let longIdx = 0;
+    const getEdgePath = (e) => {
+      const a   = positions.get(e.from), b = positions.get(e.to);
+      const vIds = longEdgeVIds.get(`${e.from}→${e.to}`) || [];
+      return vIds.length ? edgePathMulti(a, b, vIds, positions, TB) : edgePath(a, b, TB);
+    };
 
-    // 1. Arêtes non-critiques
+    // 6a. Arêtes non-critiques
     const normalLayer = svgEl1("g", { class: "edges-normal" });
-    for (const e of result.edges.filter(e => !e.critical)) {
-      const a = positions.get(e.from), b = positions.get(e.to);
-      const d = isLong(e) ? edgePathArc(a, b, TB, longIdx++, totalW) : edgePath(a, b, TB);
-      normalLayer.appendChild(buildEdgePath(d, false, e.from, e.to));
-    }
+    for (const e of result.edges.filter(e => !e.critical))
+      normalLayer.appendChild(buildEdgePath(getEdgePath(e), false, e.from, e.to));
     svgEl.appendChild(normalLayer);
 
-    // 2. Halos blancs + arêtes critiques par-dessus
+    // 6b. Halos + arêtes critiques
     const haloLayer = svgEl1("g", { class: "edge-halos" });
     const critLayer  = svgEl1("g", { class: "edges-critical" });
     for (const e of result.edges.filter(e => e.critical)) {
-      const a = positions.get(e.from), b = positions.get(e.to);
-      const d = isLong(e) ? edgePathArc(a, b, TB, longIdx++, totalW) : edgePath(a, b, TB);
+      const d = getEdgePath(e);
       haloLayer.appendChild(buildEdgeHaloPath(d, e.from, e.to));
       critLayer.appendChild(buildEdgePath(d, true, e.from, e.to));
     }
     svgEl.appendChild(haloLayer);
     svgEl.appendChild(critLayer);
 
+    // 7. Nœuds réels uniquement
     const nodeLayer = svgEl1("g", { class: "nodes" });
-    for (const t of result.tasks) {
+    for (const t of result.tasks)
       nodeLayer.appendChild(buildNode(t, positions.get(t.id)));
-    }
     svgEl.appendChild(nodeLayer);
 
     return { width: totalW, height: totalH };
@@ -200,20 +209,31 @@ const PertRender = (() => {
     }
   }
 
-  // Arc au-dessus (LR) ou à droite (TB) pour les arêtes longues
-  function edgePathArc(a, b, TB, idx, totalW) {
-    const STEP = 16;
-    if (TB) {
-      const bypassX = totalW + 8 + idx * STEP;
-      const x1 = a.x + NODE_W, y1 = a.cy;
-      const x2 = b.x,          y2 = b.cy;
-      return `M${x1},${y1} C${bypassX},${y1} ${bypassX},${y2} ${x2},${y2}`;
-    } else {
-      const peakY = -10 - idx * STEP;
-      const x1 = a.x + NODE_W, y1 = a.cy;
-      const x2 = b.x,          y2 = b.cy;
-      return `M${x1},${y1} C${x1},${peakY} ${x2},${peakY} ${x2},${y2}`;
+  // Chemin multi-segments via nœuds virtuels pour arêtes longues
+  function edgePathMulti(a, b, vIds, positions, TB) {
+    const pts = TB
+      ? [
+          { x: a.cx,         y: a.y + NODE_H },
+          ...vIds.map(vid => { const p = positions.get(vid); return { x: p.cx, y: p.cy }; }),
+          { x: b.cx,         y: b.y          }
+        ]
+      : [
+          { x: a.x + NODE_W, y: a.cy         },
+          ...vIds.map(vid => { const p = positions.get(vid); return { x: p.cx, y: p.cy }; }),
+          { x: b.x,          y: b.cy         }
+        ];
+    let d = `M${pts[0].x},${pts[0].y}`;
+    for (let i = 1; i < pts.length; i++) {
+      const p0 = pts[i - 1], p1 = pts[i];
+      if (TB) {
+        const mid = (p0.y + p1.y) / 2;
+        d += ` C${p0.x},${mid} ${p1.x},${mid} ${p1.x},${p1.y}`;
+      } else {
+        const mid = (p0.x + p1.x) / 2;
+        d += ` C${mid},${p0.y} ${mid},${p1.y} ${p1.x},${p1.y}`;
+      }
     }
+    return d;
   }
 
   function buildEdgeHaloPath(d, from, to) {
