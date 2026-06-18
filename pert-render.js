@@ -348,14 +348,15 @@ const PertRender = (() => {
     let cur = "";
     for (const w of words) {
       const candidate = cur ? cur + " " + w : w;
-      if (candidate.length <= maxChars) { cur = candidate; }
-      else {
-        if (cur) lines.push(cur);
+      if (candidate.length <= maxChars) {
+        cur = candidate;
+      } else {
+        lines.push(cur || truncate(w, maxChars));
+        if (lines.length >= 2) break; // max 2 lignes de nom
         cur = w.length > maxChars ? truncate(w, maxChars) : w;
-        if (lines.length === 1) break; // max 2 lignes de nom
       }
     }
-    if (cur) lines.push(lines.length < 2 ? cur : truncate(cur, maxChars));
+    if (cur && lines.length < 2) lines.push(cur);
     return lines;
   }
 

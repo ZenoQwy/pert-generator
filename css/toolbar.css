@@ -36,9 +36,7 @@
   font-size: 11px; color: rgba(255,255,255,0.35);
   white-space: nowrap; overflow: hidden;
 }
-#stats-bar b       { font-family: var(--mono); font-weight: 700; font-size: 10.5px; color: rgba(255,255,255,0.7); }
-#stats-bar .crit   { color: rgba(255,255,255,0.35); }
-#stats-bar .crit b { color: #ff8577; }
+#stats-bar b { font-family: var(--mono); font-weight: 700; font-size: 10.5px; color: rgba(255,255,255,0.7); }
 
 #export-wrap { position: relative; }
 #export-btn {

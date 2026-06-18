@@ -40,6 +40,7 @@
     viewportInner: document.getElementById("viewport-inner"),
     emptyState: document.getElementById("empty-state"),
     statsBar: document.getElementById("stats-bar"),
+    critPanel: document.getElementById("crit-path-panel"),
     projectTitle: document.getElementById("project-title"),
     tabs: document.querySelectorAll(".tab-btn"),
     zoomIn: document.getElementById("zoom-in"),
@@ -265,8 +266,29 @@
 
     els.statsBar.innerHTML = `
       <span>Tâches : <b>${result.tasks.length}</b></span>
-      <span>Durée totale : <b>${result.projectDuration} j</b></span>
-      <span class="crit">Chemin critique : <b>${result.criticalPath.join(" → ")}</b></span>`;
+      <span>Durée : <b>${result.projectDuration} j</b></span>`;
+
+    // Panneau chemin critique (top-left viewport)
+    const cp = result.criticalPath;
+    const MAX_INLINE = 6;
+    let nodesHtml, moreHtml = "";
+    if (cp.length <= MAX_INLINE) {
+      nodesHtml = cp.map((id, i) =>
+        i === 0 ? `<span>${id}</span>`
+                : `<span class="cp-arrow">→</span><span>${id}</span>`
+      ).join("");
+    } else {
+      const shown = [cp[0], cp[1], "…", cp[cp.length - 1]];
+      nodesHtml = shown.map((id, i) =>
+        i === 0 ? `<span>${id}</span>`
+                : `<span class="cp-arrow">→</span><span>${id}</span>`
+      ).join("");
+      moreHtml = `<span class="cp-more">(+${cp.length - 3} étapes)</span>`;
+    }
+    els.critPanel.hidden = false;
+    els.critPanel.innerHTML =
+      `<span class="cp-label">Chemin critique</span>` +
+      `<div class="cp-nodes">${nodesHtml}${moreHtml}</div>`;
 
     if (refit) requestAnimationFrame(fitToScreen);
   }

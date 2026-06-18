@@ -53,6 +53,24 @@ svg#pert-svg { display: block; pointer-events: none; }
 #dir-toggle:hover   { border-color: var(--ink-3); background: #fafafa; }
 #dir-toggle svg     { width: 16px; height: 16px; }
 
+/* Panneau chemin critique */
+#crit-path-panel {
+  position: absolute; top: 10px; left: 10px; z-index: 10;
+  background: var(--panel); border: 1px solid var(--border);
+  border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.09);
+  padding: 8px 12px; max-width: 380px; pointer-events: none;
+}
+#crit-path-panel .cp-label {
+  font-size: 8px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.09em; color: var(--ink-3); display: block; margin-bottom: 4px;
+}
+#crit-path-panel .cp-nodes {
+  font-size: 10.5px; font-family: var(--mono); font-weight: 600;
+  color: var(--red); line-height: 1.65; word-break: break-word;
+}
+#crit-path-panel .cp-arrow { color: var(--ink-3); font-weight: 400; margin: 0 1px; }
+#crit-path-panel .cp-more  { font-size: 9px; color: var(--ink-3); font-family: var(--sans); margin-left: 4px; }
+
 /* Badge version */
 #version-badge {
   position: absolute; top: 10px; right: 10px; z-index: 5;
