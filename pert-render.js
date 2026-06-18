@@ -23,49 +23,59 @@ const PertRender = (() => {
       if (!columns.has(t.level)) columns.set(t.level, []);
       columns.get(t.level).push(t);
     }
-    const levels   = [...columns.keys()].sort((a, b) => a - b);
-    const maxSlots = Math.max(...levels.map(l => columns.get(l).length));
+    const levels = [...columns.keys()].sort((a, b) => a - b);
 
-    // 2. Positionner chaque nœud
+    // 2. Minimisation des croisements — 5 passes alternées bary prédécesseurs / successeurs
+    const ranks = new Map(); // id → rang dans son niveau
+    // Passe initiale bas→haut
+    for (const lvl of levels) {
+      const nodes = columns.get(lvl).slice();
+      nodes.sort((a, b) => baryPred(a, ranks) - baryPred(b, ranks));
+      columns.set(lvl, nodes);
+      nodes.forEach((t, i) => ranks.set(t.id, i));
+    }
+    // 2 cycles up/down
+    for (let c = 0; c < 2; c++) {
+      for (const lvl of [...levels].reverse()) {
+        const nodes = columns.get(lvl).slice();
+        nodes.sort((a, b) => barySucc(a, ranks) - barySucc(b, ranks));
+        columns.set(lvl, nodes);
+        nodes.forEach((t, i) => ranks.set(t.id, i));
+      }
+      for (const lvl of levels) {
+        const nodes = columns.get(lvl).slice();
+        nodes.sort((a, b) => baryPred(a, ranks) - baryPred(b, ranks));
+        columns.set(lvl, nodes);
+        nodes.forEach((t, i) => ranks.set(t.id, i));
+      }
+    }
+
+    // 3. Calcul des positions finales depuis les rangs
+    const maxSlots = Math.max(...levels.map(l => columns.get(l).length));
     const positions = new Map();
     for (const lvl of levels) {
-      let nodes = columns.get(lvl).slice();
-      nodes.sort((a, b) => barycenter(a, positions) - barycenter(b, positions));
-      columns.set(lvl, nodes);
-
+      const nodes  = columns.get(lvl);
       const offset = Math.floor((maxSlots - nodes.length) / 2);
-
       nodes.forEach((t, i) => {
-        const slot = nodes.length === maxSlots ? i : offset + i;
-
-        // axe principal = niveau, axe secondaire = slot
+        const slot  = nodes.length === maxSlots ? i : offset + i;
         const main  = PAD + lvl  * (TB ? (NODE_H + COL_GAP) : (NODE_W + COL_GAP));
         const cross = PAD + slot * (TB ? (NODE_W + ROW_GAP) : (NODE_H + ROW_GAP));
-
         const x = TB ? cross : main;
         const y = TB ? main  : cross;
-
         positions.set(t.id, { x, y, cx: x + NODE_W / 2, cy: y + NODE_H / 2, row: slot });
       });
     }
 
     compactRows(positions, TB);
 
-    // 3. Dimensions du SVG + espace bypass pour les arêtes longues
+    // 4. Dimensions du SVG
     const usedSlots = Math.max(...[...positions.values()].map(p => p.row)) + 1;
-
-    // Arêtes "longues" : sautent au moins un niveau intermédiaire
-    const isLongEdge = e => byId.get(e.to).level - byId.get(e.from).level > 1;
-    const longCount  = result.edges.filter(isLongEdge).length;
-    const BYPASS_STEP = 10; // px entre chaque couloir
-    const bypassExtra = longCount > 0 ? longCount * BYPASS_STEP + 20 : 0;
-
     const totalW = TB
-      ? PAD * 2 + usedSlots  * NODE_W + (usedSlots  - 1) * ROW_GAP + (TB ? bypassExtra : 0)
+      ? PAD * 2 + usedSlots  * NODE_W + (usedSlots  - 1) * ROW_GAP
       : PAD * 2 + levels.length * NODE_W + (levels.length - 1) * COL_GAP;
     const totalH = TB
       ? PAD * 2 + levels.length * NODE_H + (levels.length - 1) * COL_GAP
-      : PAD * 2 + usedSlots  * NODE_H + (usedSlots  - 1) * ROW_GAP + (TB ? 0 : bypassExtra);
+      : PAD * 2 + usedSlots  * NODE_H + (usedSlots  - 1) * ROW_GAP;
 
     svgEl.setAttribute("viewBox",     `0 0 ${totalW} ${totalH}`);
     svgEl.setAttribute("width",       totalW);
@@ -76,28 +86,20 @@ const PertRender = (() => {
 
     svgEl.appendChild(buildDefs());
 
-    // Compteurs de couloir séparés pour critique / non-critique
-    let normBypassIdx = 0, critBypassIdx = 0;
-
-    // 1. Arêtes non-critiques en dessous
+    // 1. Arêtes non-critiques
     const normalLayer = svgEl1("g", { class: "edges-normal" });
     for (const e of result.edges.filter(e => !e.critical)) {
       const a = positions.get(e.from), b = positions.get(e.to);
-      const d = isLongEdge(e)
-        ? edgePathLong(a, b, TB, totalW, totalH, normBypassIdx++)
-        : edgePath(a, b, TB);
-      normalLayer.appendChild(buildEdgePath(d, false, e.from, e.to));
+      normalLayer.appendChild(buildEdgePath(edgePath(a, b, TB), false, e.from, e.to));
     }
     svgEl.appendChild(normalLayer);
 
-    // 2. Halos blancs + arêtes critiques par-dessus tout
+    // 2. Halos blancs + arêtes critiques par-dessus
     const haloLayer = svgEl1("g", { class: "edge-halos" });
     const critLayer  = svgEl1("g", { class: "edges-critical" });
     for (const e of result.edges.filter(e => e.critical)) {
       const a = positions.get(e.from), b = positions.get(e.to);
-      const d = isLongEdge(e)
-        ? edgePathLong(a, b, TB, totalW, totalH, critBypassIdx++)
-        : edgePath(a, b, TB);
+      const d = edgePath(a, b, TB);
       haloLayer.appendChild(buildEdgeHaloPath(d, e.from, e.to));
       critLayer.appendChild(buildEdgePath(d, true, e.from, e.to));
     }
@@ -137,12 +139,15 @@ const PertRender = (() => {
     }
   }
 
-  function barycenter(task, positions) {
-    if (task.predecessors.length === 0) return 0;
-    const slots = task.predecessors
-      .map(p => positions.get(p)).filter(Boolean).map(p => p.row);
-    if (slots.length === 0) return 0;
-    return slots.reduce((a, b) => a + b, 0) / slots.length;
+  function baryPred(task, ranks) {
+    const preds = task.predecessors.filter(p => ranks.has(p));
+    if (!preds.length) return 0;
+    return preds.reduce((s, p) => s + ranks.get(p), 0) / preds.length;
+  }
+  function barySucc(task, ranks) {
+    const succs = task.successors.filter(s => ranks.has(s));
+    if (!succs.length) return Infinity;
+    return succs.reduce((s, p) => s + ranks.get(p), 0) / succs.length;
   }
 
   function buildDefs() {
@@ -177,28 +182,6 @@ const PertRender = (() => {
       const x2 = b.x,          y2 = b.cy;
       const midX = (x1 + x2) / 2;
       return `M${x1},${y1} C${midX},${y1} ${midX},${y2} ${x2},${y2}`;
-    }
-  }
-
-  // Chemin long (saute des niveaux) — dérivation sous/à droite des nœuds
-  function edgePathLong(a, b, TB, totalW, totalH, idx) {
-    const CURVE = 30; // rayon des virages
-    if (TB) {
-      // Dérivation droite (mode haut→bas)
-      const bypassX = totalW - 14 - idx * 10;
-      const x1 = a.cx, y1 = a.y + NODE_H;
-      const x2 = b.cx, y2 = b.y;
-      const midY = (y1 + y2) / 2;
-      return `M${x1},${y1} C${x1},${y1+CURVE} ${bypassX},${y1+CURVE} ${bypassX},${midY}`
-           + ` C${bypassX},${y2-CURVE} ${x2},${y2-CURVE} ${x2},${y2}`;
-    } else {
-      // Dérivation bas (mode gauche→droite)
-      const bypassY = totalH - 14 - idx * 10;
-      const x1 = a.x + NODE_W, y1 = a.cy;
-      const x2 = b.x,          y2 = b.cy;
-      return `M${x1},${y1} C${x1+CURVE},${y1} ${x1+CURVE},${bypassY} ${x1+2*CURVE},${bypassY}`
-           + ` L${x2-2*CURVE},${bypassY}`
-           + ` C${x2-CURVE},${bypassY} ${x2-CURVE},${y2} ${x2},${y2}`;
     }
   }
 

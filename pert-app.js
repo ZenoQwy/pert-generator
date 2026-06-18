@@ -405,28 +405,21 @@
       .replace(/</g, "&lt;");
   }
 
-  // ═══════════════════════════ DIR HINT (first visit) ═══════════════════════════
+  // ═══════════════════════════ DIR HINT (chaque chargement) ═══════════════════════════
   const dirHintEl = document.getElementById('dir-hint');
-  const HINT_KEY  = 'pert-dir-hint-v2';
   if (dirHintEl) {
-    if (localStorage.getItem(HINT_KEY)) {
-      dirHintEl.remove();
-    } else {
-      // Positionner le hint exactement à gauche du bouton dir-toggle
-      requestAnimationFrame(() => {
-        const btn   = document.getElementById('dir-toggle');
-        const vp    = document.getElementById('viewport');
-        const btnR  = btn.getBoundingClientRect();
-        const vpR   = vp.getBoundingClientRect();
-        dirHintEl.style.right  = (vpR.right  - btnR.left  + 10) + 'px';
-        dirHintEl.style.bottom = (vpR.bottom - btnR.bottom + (btnR.height - dirHintEl.offsetHeight) / 2) + 'px';
-      });
-      setTimeout(() => {
-        dirHintEl.classList.add('fade-out');
-        setTimeout(() => dirHintEl.remove(), 500);
-        localStorage.setItem(HINT_KEY, '1');
-      }, 3500);
-    }
+    requestAnimationFrame(() => {
+      const btn  = document.getElementById('dir-toggle');
+      const vp   = document.getElementById('viewport');
+      const btnR = btn.getBoundingClientRect();
+      const vpR  = vp.getBoundingClientRect();
+      dirHintEl.style.right  = (vpR.right  - btnR.left  + 10) + 'px';
+      dirHintEl.style.bottom = (vpR.bottom - btnR.bottom + (btnR.height - dirHintEl.offsetHeight) / 2) + 'px';
+    });
+    setTimeout(() => {
+      dirHintEl.classList.add('fade-out');
+      setTimeout(() => dirHintEl.remove(), 500);
+    }, 3500);
   }
 
   // ═══════════════════════════ INIT ═══════════════════════════
