@@ -77,20 +77,35 @@ const PertRender = (() => {
       ? PAD * 2 + levels.length * NODE_H + (levels.length - 1) * COL_GAP
       : PAD * 2 + usedSlots  * NODE_H + (usedSlots  - 1) * ROW_GAP;
 
-    svgEl.setAttribute("viewBox",     `0 0 ${totalW} ${totalH}`);
-    svgEl.setAttribute("width",       totalW);
-    svgEl.setAttribute("height",      totalH);
-    svgEl.setAttribute("data-base-w", totalW);
-    svgEl.setAttribute("data-base-h", totalH);
+    // Arêtes longues (sautent ≥1 niveau) → arc au-dessus (LR) ou à droite (TB)
+    const isLong   = e => byId.get(e.to).level - byId.get(e.from).level > 1;
+    const longCount = result.edges.filter(isLong).length;
+    const ARC_STEP  = 16; // px entre deux arcs
+    const arcExtra  = longCount > 0 ? longCount * ARC_STEP + 24 : 0;
+
+    // ViewBox étendue côté gauche/haut pour les arcs
+    const vbX = TB ? 0          : 0;
+    const vbY = TB ? 0          : -arcExtra;
+    const vbW = TB ? totalW + arcExtra : totalW;
+    const vbH = TB ? totalH     : totalH + arcExtra;
+
+    svgEl.setAttribute("viewBox",     `${vbX} ${vbY} ${vbW} ${vbH}`);
+    svgEl.setAttribute("width",       vbW);
+    svgEl.setAttribute("height",      vbH);
+    svgEl.setAttribute("data-base-w", vbW);
+    svgEl.setAttribute("data-base-h", vbH);
     svgEl.innerHTML = "";
 
     svgEl.appendChild(buildDefs());
+
+    let longIdx = 0;
 
     // 1. Arêtes non-critiques
     const normalLayer = svgEl1("g", { class: "edges-normal" });
     for (const e of result.edges.filter(e => !e.critical)) {
       const a = positions.get(e.from), b = positions.get(e.to);
-      normalLayer.appendChild(buildEdgePath(edgePath(a, b, TB), false, e.from, e.to));
+      const d = isLong(e) ? edgePathArc(a, b, TB, longIdx++, totalW) : edgePath(a, b, TB);
+      normalLayer.appendChild(buildEdgePath(d, false, e.from, e.to));
     }
     svgEl.appendChild(normalLayer);
 
@@ -99,7 +114,7 @@ const PertRender = (() => {
     const critLayer  = svgEl1("g", { class: "edges-critical" });
     for (const e of result.edges.filter(e => e.critical)) {
       const a = positions.get(e.from), b = positions.get(e.to);
-      const d = edgePath(a, b, TB);
+      const d = isLong(e) ? edgePathArc(a, b, TB, longIdx++, totalW) : edgePath(a, b, TB);
       haloLayer.appendChild(buildEdgeHaloPath(d, e.from, e.to));
       critLayer.appendChild(buildEdgePath(d, true, e.from, e.to));
     }
@@ -182,6 +197,22 @@ const PertRender = (() => {
       const x2 = b.x,          y2 = b.cy;
       const midX = (x1 + x2) / 2;
       return `M${x1},${y1} C${midX},${y1} ${midX},${y2} ${x2},${y2}`;
+    }
+  }
+
+  // Arc au-dessus (LR) ou à droite (TB) pour les arêtes longues
+  function edgePathArc(a, b, TB, idx, totalW) {
+    const STEP = 16;
+    if (TB) {
+      const bypassX = totalW + 8 + idx * STEP;
+      const x1 = a.x + NODE_W, y1 = a.cy;
+      const x2 = b.x,          y2 = b.cy;
+      return `M${x1},${y1} C${bypassX},${y1} ${bypassX},${y2} ${x2},${y2}`;
+    } else {
+      const peakY = -10 - idx * STEP;
+      const x1 = a.x + NODE_W, y1 = a.cy;
+      const x2 = b.x,          y2 = b.cy;
+      return `M${x1},${y1} C${x1},${peakY} ${x2},${peakY} ${x2},${y2}`;
     }
   }
 
