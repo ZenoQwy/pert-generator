@@ -7,7 +7,7 @@
 const PertRender = (() => {
 
   const NODE_W  = 172;
-  const NODE_H  = 96;
+  const NODE_H  = 108;
   const COL_GAP = 96;   // écart entre niveaux (axe principal)
   const ROW_GAP = 28;   // écart entre nœuds du même niveau (axe secondaire)
   const PAD     = 56;
@@ -287,10 +287,14 @@ const PertRender = (() => {
     const durPart = isJalon ? "" : ` (${task.duration}j)`;
     const midCy   = pos.y + rowH * 1.5;
     if (hasName) {
-      // Ligne 1 : identifiant + durée
-      g.appendChild(svgText(pos.x + NODE_W / 2, midCy - rowH * 0.22, `${task.id}${durPart}`, c.text, 10, "700", "node-label-id"));
-      // Ligne 2 : nom complet (jusqu'à 22 chars)
-      g.appendChild(svgText(pos.x + NODE_W / 2, midCy + rowH * 0.22, truncate(task.name, 22), c.text, 9.5, "500", "node-label-id"));
+      const nameLines = wrapText(task.name, 23); // max 2 lignes de 23 chars
+      const LINE_H = rowH * 0.30; // espacement entre lignes (~10.8px)
+      const totalLines = 1 + nameLines.length;
+      const startY = midCy - ((totalLines - 1) * LINE_H) / 2;
+      g.appendChild(svgText(pos.x + NODE_W / 2, startY, `${task.id}${durPart}`, c.text, 10, "700", "node-label-id"));
+      nameLines.forEach((line, i) =>
+        g.appendChild(svgText(pos.x + NODE_W / 2, startY + (i + 1) * LINE_H, line, c.text, 9.5, "500", "node-label-id"))
+      );
     } else {
       g.appendChild(svgText(pos.x + NODE_W / 2, midCy, `${task.id}${durPart}`, c.text, 10.5, "600", "node-label-id"));
     }
@@ -337,6 +341,24 @@ const PertRender = (() => {
     t.textContent = content;
     return t;
   }
+  function wrapText(str, maxChars) {
+    if (str.length <= maxChars) return [str];
+    const words = str.split(" ");
+    const lines = [];
+    let cur = "";
+    for (const w of words) {
+      const candidate = cur ? cur + " " + w : w;
+      if (candidate.length <= maxChars) { cur = candidate; }
+      else {
+        if (cur) lines.push(cur);
+        cur = w.length > maxChars ? truncate(w, maxChars) : w;
+        if (lines.length === 1) break; // max 2 lignes de nom
+      }
+    }
+    if (cur) lines.push(lines.length < 2 ? cur : truncate(cur, maxChars));
+    return lines;
+  }
+
   function truncate(str, n) {
     return str.length > n ? str.slice(0, n - 1) + "…" : str;
   }
