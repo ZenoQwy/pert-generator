@@ -5,3 +5,18 @@
 .edge-normal        { stroke: var(--blue); fill: none; stroke-dasharray: 5 4; }
 .node-label-id      { font-family: var(--sans); font-weight: 700; }
 .node-label-val     { font-family: var(--mono); font-weight: 700; }
+
+/* Interactivité nœuds */
+.node-group { pointer-events: all; cursor: default; }
+
+/* Hover : estomper tout, puis mettre en valeur les éléments liés */
+svg#pert-svg.pert-has-hover .node-group,
+svg#pert-svg.pert-has-hover [data-from] {
+  opacity: 0.08;
+  transition: opacity .12s;
+}
+svg#pert-svg.pert-has-hover .node-group.hl,
+svg#pert-svg.pert-has-hover [data-from].hl {
+  opacity: 1;
+  transition: opacity .12s;
+}

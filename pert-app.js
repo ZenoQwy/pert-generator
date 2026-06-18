@@ -223,10 +223,37 @@
     }
   }
 
+  // ═══════════════════════════ HOVER HIGHLIGHT ═══════════════════════════
+  function wireHover() {
+    els.svg.querySelectorAll('.node-group').forEach(g => {
+      g.addEventListener('mouseenter', () => highlightNode(g.dataset.id));
+      g.addEventListener('mouseleave', clearHighlight);
+    });
+  }
+
+  function highlightNode(id) {
+    els.svg.classList.add('pert-has-hover');
+    els.svg.querySelectorAll(`.node-group[data-id="${id}"]`).forEach(g => g.classList.add('hl'));
+    els.svg.querySelectorAll('[data-from][data-to]').forEach(edge => {
+      const { from, to } = edge.dataset;
+      if (from === id || to === id) {
+        edge.classList.add('hl');
+        const otherId = from === id ? to : from;
+        els.svg.querySelectorAll(`.node-group[data-id="${otherId}"]`).forEach(g => g.classList.add('hl'));
+      }
+    });
+  }
+
+  function clearHighlight() {
+    els.svg.classList.remove('pert-has-hover');
+    els.svg.querySelectorAll('.hl').forEach(el => el.classList.remove('hl'));
+  }
+
   function drawResult(result, refit) {
     els.emptyState.style.display  = "none";
     els.svg.style.display         = "block";
     PertRender.render(els.svg, result, currentDirection);
+    wireHover();
 
     els.projectTitle.textContent = result.title;
     currentData.title = result.title;
@@ -403,6 +430,20 @@
       .replace(/&/g, "&amp;")
       .replace(/"/g, "&quot;")
       .replace(/</g, "&lt;");
+  }
+
+  // ═══════════════════════════ DIR HINT (first visit) ═══════════════════════════
+  const dirHintEl = document.getElementById('dir-hint');
+  if (dirHintEl) {
+    if (localStorage.getItem('pert-dir-hint-shown')) {
+      dirHintEl.remove();
+    } else {
+      setTimeout(() => {
+        dirHintEl.classList.add('fade-out');
+        setTimeout(() => dirHintEl.remove(), 500);
+        localStorage.setItem('pert-dir-hint-shown', '1');
+      }, 3500);
+    }
   }
 
   // ═══════════════════════════ INIT ═══════════════════════════

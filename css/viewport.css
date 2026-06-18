@@ -77,3 +77,26 @@ svg#pert-svg { display: block; pointer-events: none; }
   padding: 2px 7px; opacity: 0.6;
   pointer-events: none;
 }
+
+/* Hint bulle orientation (first visit) */
+@keyframes hint-bounce {
+  0%, 100% { transform: translateY(0); }
+  45%       { transform: translateY(-5px); }
+}
+#dir-hint {
+  position: absolute; bottom: 24px; right: 62px; z-index: 20;
+  background: var(--ink); color: #fff;
+  font-size: 10.5px; font-family: var(--sans); font-weight: 500;
+  padding: 6px 11px; border-radius: var(--r-s);
+  white-space: nowrap; pointer-events: none;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+  animation: hint-bounce 0.9s ease-in-out 3;
+  transition: opacity .5s ease;
+}
+#dir-hint::after {
+  content: '';
+  position: absolute; right: -7px; top: 50%; transform: translateY(-50%);
+  border: 7px solid transparent;
+  border-left-color: var(--ink); border-right-width: 0;
+}
+#dir-hint.fade-out { opacity: 0; }

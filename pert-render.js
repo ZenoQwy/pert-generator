@@ -74,17 +74,16 @@ const PertRender = (() => {
     for (const e of result.edges.filter(e => !e.critical)) {
       const a = positions.get(e.from);
       const b = positions.get(e.to);
-      normalLayer.appendChild(buildEdge(a, b, false, TB));
+      normalLayer.appendChild(buildEdge(a, b, false, TB, e.from, e.to));
     }
     svgEl.appendChild(normalLayer);
 
-    // 2. Halos blancs uniquement sur les arêtes critiques :
-    //    crée un vrai "pont" là où le chemin critique croise les autres
+    // 2. Halos blancs uniquement sur les arêtes critiques (effet pont)
     const haloLayer = svgEl1("g", { class: "edge-halos" });
     for (const e of result.edges.filter(e => e.critical)) {
       const a = positions.get(e.from);
       const b = positions.get(e.to);
-      haloLayer.appendChild(buildEdgeHalo(a, b, TB));
+      haloLayer.appendChild(buildEdgeHalo(a, b, TB, e.from, e.to));
     }
     svgEl.appendChild(haloLayer);
 
@@ -93,7 +92,7 @@ const PertRender = (() => {
     for (const e of result.edges.filter(e => e.critical)) {
       const a = positions.get(e.from);
       const b = positions.get(e.to);
-      critLayer.appendChild(buildEdge(a, b, true, TB));
+      critLayer.appendChild(buildEdge(a, b, true, TB, e.from, e.to));
     }
     svgEl.appendChild(critLayer);
 
@@ -172,22 +171,22 @@ const PertRender = (() => {
     }
   }
 
-  function buildEdgeHalo(a, b, TB) {
+  function buildEdgeHalo(a, b, TB, from, to) {
     return svgEl1("path", {
       d: edgePath(a, b, TB),
-      stroke: "#ffffff",
-      fill: "none",
-      "stroke-width": "7",
-      "stroke-linecap": "round"
+      stroke: "#ffffff", fill: "none",
+      "stroke-width": "7", "stroke-linecap": "round",
+      "data-from": from, "data-to": to
     });
   }
 
-  function buildEdge(a, b, critical, TB) {
+  function buildEdge(a, b, critical, TB, from, to) {
     return svgEl1("path", {
       d: edgePath(a, b, TB),
       class: critical ? "edge-critical" : "edge-normal",
-      "stroke-width":  critical ? "2.2" : "1.5",
-      "marker-end":    critical ? "url(#arr-crit)" : "url(#arr-norm)"
+      "stroke-width": critical ? "2.2" : "1.5",
+      "marker-end":   critical ? "url(#arr-crit)" : "url(#arr-norm)",
+      "data-from": from, "data-to": to
     });
   }
 
