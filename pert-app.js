@@ -271,24 +271,22 @@
     // Panneau chemin critique (top-left viewport)
     const cp = result.criticalPath;
     const MAX_INLINE = 6;
-    let nodesHtml, moreHtml = "";
+    const toHtml = ids => ids.map((id, i) =>
+      i === 0 ? `<span>${id}</span>`
+              : `<span class="cp-arrow">→</span><span>${id}</span>`
+    ).join("");
+
+    let bodyHtml;
     if (cp.length <= MAX_INLINE) {
-      nodesHtml = cp.map((id, i) =>
-        i === 0 ? `<span>${id}</span>`
-                : `<span class="cp-arrow">→</span><span>${id}</span>`
-      ).join("");
+      bodyHtml = `<div class="cp-nodes">${toHtml(cp)}</div>`;
     } else {
-      const shown = [cp[0], cp[1], "…", cp[cp.length - 1]];
-      nodesHtml = shown.map((id, i) =>
-        i === 0 ? `<span>${id}</span>`
-                : `<span class="cp-arrow">→</span><span>${id}</span>`
-      ).join("");
-      moreHtml = `<span class="cp-more">(+${cp.length - 3} étapes)</span>`;
+      const short = [cp[0], cp[1], "…", cp[cp.length - 1]];
+      bodyHtml =
+        `<div class="cp-nodes cp-short">${toHtml(short)}<span class="cp-more">(+${cp.length - 3} étapes)</span></div>` +
+        `<div class="cp-nodes cp-full">${toHtml(cp)}</div>`;
     }
     els.critPanel.hidden = false;
-    els.critPanel.innerHTML =
-      `<span class="cp-label">Chemin critique</span>` +
-      `<div class="cp-nodes">${nodesHtml}${moreHtml}</div>`;
+    els.critPanel.innerHTML = `<span class="cp-label">Chemin critique</span>${bodyHtml}`;
 
     if (refit) requestAnimationFrame(fitToScreen);
   }
