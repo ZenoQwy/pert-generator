@@ -325,14 +325,15 @@
   function exportPNG() {
     if (!lastResult) return;
     const svgEl = els.svg;
-    const w = Number(svgEl.getAttribute("width"));
-    const h = Number(svgEl.getAttribute("height"));
-    const SCALE = 2; // résolution 2× pour PPT
+    const W = Number(svgEl.getAttribute("width"));
+    const H = Number(svgEl.getAttribute("height"));
+    const SCALE     = 2;    // résolution 2× pour PPT
+    const MAX_SLICE = 1200; // px natifs max par tranche
 
     const ns = "http://www.w3.org/2000/svg";
     const bg = document.createElementNS(ns, "rect");
     bg.setAttribute("x", 0); bg.setAttribute("y", 0);
-    bg.setAttribute("width", w); bg.setAttribute("height", h);
+    bg.setAttribute("width", W); bg.setAttribute("height", H);
     bg.setAttribute("fill", "#ffffff");
     svgEl.insertBefore(bg, svgEl.firstChild);
 
@@ -354,18 +355,45 @@
     const img  = new Image();
 
     img.onload = () => {
-      const canvas = document.createElement("canvas");
-      canvas.width  = w * SCALE;
-      canvas.height = h * SCALE;
-      const ctx = canvas.getContext("2d");
-      ctx.fillStyle = "#ffffff";
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.scale(SCALE, SCALE);
-      ctx.drawImage(img, 0, 0, w, h);
-      URL.revokeObjectURL(url);
-      canvas.toBlob(png => {
-        triggerDownload(URL.createObjectURL(png), `${safeFilename()}.png`);
-      }, "image/png");
+      // Découpe horizontale si le diagramme est plus large que haut, sinon verticale
+      const splitH  = W >= H;
+      const dim     = splitH ? W : H;
+      const nSlices = dim <= MAX_SLICE ? 1 : Math.min(Math.ceil(dim / MAX_SLICE), 5);
+      const sliceDim = Math.ceil(dim / nSlices);
+
+      for (let i = 0; i < nSlices; i++) {
+        (idx => setTimeout(() => {
+          const canvas = document.createElement("canvas");
+          const ctx    = canvas.getContext("2d");
+
+          if (splitH) {
+            const x0 = idx * sliceDim;
+            const sw = Math.min(sliceDim, W - x0);
+            canvas.width  = sw * SCALE;
+            canvas.height = H  * SCALE;
+            ctx.fillStyle = "#ffffff";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.scale(SCALE, SCALE);
+            ctx.drawImage(img, -x0, 0, W, H);
+          } else {
+            const y0 = idx * sliceDim;
+            const sh = Math.min(sliceDim, H - y0);
+            canvas.width  = W  * SCALE;
+            canvas.height = sh * SCALE;
+            ctx.fillStyle = "#ffffff";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.scale(SCALE, SCALE);
+            ctx.drawImage(img, 0, -y0, W, H);
+          }
+
+          const suffix = nSlices > 1 ? `-${idx + 1}` : "";
+          canvas.toBlob(png => {
+            triggerDownload(URL.createObjectURL(png), `${safeFilename()}${suffix}.png`);
+          }, "image/png");
+        }, idx * 350))(i);
+      }
+
+      setTimeout(() => URL.revokeObjectURL(url), nSlices * 350 + 3000);
     };
 
     img.src = url;
